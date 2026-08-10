@@ -174,6 +174,7 @@ test('admin cannot change question type on update', function () {
         'subject_id' => $question->subject_id,
         'type' => QuestionType::Multiple->value,
         'body' => $question->body,
+        'context_mode' => 'none',
         'options' => $question->options->map(fn ($option) => [
             'label' => $option->label,
             'content' => $option->content,
@@ -185,7 +186,7 @@ test('admin cannot change question type on update', function () {
 
     $this->actingAs($admin)
         ->put(route('admin.questions.update', $question), $payload)
-        ->assertRedirect(route('admin.questions.index'));
+        ->assertSessionHasErrors('type');
 
     expect($question->fresh()->type)->toBe(QuestionType::Single);
 });
