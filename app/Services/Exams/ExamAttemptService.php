@@ -1,0 +1,203 @@
+<?php
+
+namespace App\Services\Exams;
+
+use App\Enums\ExamAttemptStatus;
+use App\Models\Exam;
+use App\Models\ExamAttempt;
+use App\Models\ExamAttemptAnswer;
+use App\Models\ExamAttemptQuestion;
+use App\Models\ExamAttemptQuestionOption;
+use App\Models\User;
+use App\Services\Questions\QuestionRepository;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class ExamAttemptService
+{
+    public function __construct(
+        private readonly QuestionRepository $questions,
+        private readonly ExamGrader $grader,
+    ) {}
+
+    public function startOrResume(Exam $exam, User $user): ExamAttempt
+    {
+        if (! $exam->isAvailableNow()) {
+            throw ValidationException::withMessages([
+                'exam' => 'Экзамен недоступен.',
+            ]);
+        }
+
+        $existing = ExamAttempt::query()
+            ->where('exam_id', $exam->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($existing !== null) {
+            if ($existing->status === ExamAttemptStatus::Submitted) {
+                throw ValidationException::withMessages([
+                    'exam' => 'Вы уже завершили этот экзамен.',
+                ]);
+            }
+
+            return $existing->load([
+                'snapshotQuestions.options',
+                'answers',
+            ]);
+        }
+
+        return DB::transaction(function () use ($exam, $user): ExamAttempt {
+            $attempt = ExamAttempt::query()->create([
+                'exam_id' => $exam->id,
+                'user_id' => $user->id,
+                'status' => ExamAttemptStatus::InProgress,
+                'started_at' => now(),
+                'max_score' => $this->calculateMaxScore($exam),
+            ]);
+
+            $this->createSnapshots($attempt, $exam);
+
+            return $attempt->load([
+                'snapshotQuestions.options',
+                'answers',
+            ]);
+        });
+    }
+
+    /**
+     * @param  array<int, array{exam_attempt_question_id: int, selected_option_ids: array<int>}>  $answers
+     */
+    public function submit(ExamAttempt $attempt, array $answers): ExamAttempt
+    {
+        if (! $attempt->isInProgress()) {
+            throw ValidationException::withMessages([
+                'attempt' => 'Попытка уже завершена.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($attempt, $answers): ExamAttempt {
+            $attempt->load([
+                'snapshotQuestions.options',
+                'exam.examQuestions',
+            ]);
+
+            $totalScore = 0.0;
+
+            foreach ($answers as $answerPayload) {
+                $snapshotQuestion = $attempt->snapshotQuestions
+                    ->firstWhere('id', $answerPayload['exam_attempt_question_id']);
+
+                if ($snapshotQuestion === null) {
+                    continue;
+                }
+
+                $selectedOptionIds = collect($answerPayload['selected_option_ids'])
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                $this->assertSelectedOptionsBelongToQuestion(
+                    $snapshotQuestion,
+                    $selectedOptionIds,
+                );
+
+                $sourceOptionIds = $snapshotQuestion->options
+                    ->whereIn('id', $selectedOptionIds)
+                    ->pluck('question_option_id')
+                    ->all();
+
+                $question = $this->questions->findForGrading($snapshotQuestion->question_id);
+                $score = $this->grader->gradeQuestion($question, $sourceOptionIds);
+
+                ExamAttemptAnswer::query()->updateOrCreate(
+                    [
+                        'exam_attempt_id' => $attempt->id,
+                        'exam_attempt_question_id' => $snapshotQuestion->id,
+                    ],
+                    [
+                        'selected_option_ids' => $selectedOptionIds,
+                        'score_awarded' => $score,
+                        'answered_at' => now(),
+                    ],
+                );
+
+                $totalScore += $score;
+            }
+
+            $attempt->update([
+                'status' => ExamAttemptStatus::Submitted,
+                'submitted_at' => now(),
+                'total_score' => $totalScore,
+            ]);
+
+            return $attempt->fresh([
+                'snapshotQuestions.options',
+                'answers',
+            ]);
+        });
+    }
+
+    private function createSnapshots(ExamAttempt $attempt, Exam $exam): void
+    {
+        $exam->load([
+            'examQuestions.question.options' => fn ($query) => $query->orderBy('sort_order'),
+            'examQuestions.question.context',
+        ]);
+
+        foreach ($exam->examQuestions as $examQuestion) {
+            $question = $examQuestion->question;
+            $context = $question->context;
+
+            $snapshotQuestion = ExamAttemptQuestion::query()->create([
+                'exam_attempt_id' => $attempt->id,
+                'question_id' => $question->id,
+                'question_context_id' => $context?->id,
+                'type' => $question->type,
+                'body' => $question->body,
+                'context_title' => $context?->title,
+                'context_body' => $context?->body,
+                'sort_order' => $examQuestion->sort_order,
+            ]);
+
+            foreach ($question->options as $option) {
+                ExamAttemptQuestionOption::query()->create([
+                    'exam_attempt_question_id' => $snapshotQuestion->id,
+                    'question_option_id' => $option->id,
+                    'select_group' => $option->select_group,
+                    'label' => $option->label,
+                    'content' => $option->content,
+                    'sort_order' => $option->sort_order,
+                ]);
+            }
+        }
+    }
+
+    private function calculateMaxScore(Exam $exam): float
+    {
+        $exam->loadMissing('examQuestions.question');
+
+        return (float) $exam->examQuestions->sum(
+            fn ($examQuestion) => $examQuestion->points_override
+                ?? $examQuestion->question->type->maxScore(),
+        );
+    }
+
+    /**
+     * @param  array<int>  $selectedSnapshotOptionIds
+     */
+    private function assertSelectedOptionsBelongToQuestion(
+        ExamAttemptQuestion $snapshotQuestion,
+        array $selectedSnapshotOptionIds,
+    ): void {
+        $allowedIds = $snapshotQuestion->options->pluck('id')->all();
+
+        foreach ($selectedSnapshotOptionIds as $optionId) {
+            if (! in_array($optionId, $allowedIds, true)) {
+                throw ValidationException::withMessages([
+                    'answers' => 'Выбран недопустимый вариант ответа.',
+                ]);
+            }
+        }
+    }
+}
