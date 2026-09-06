@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -28,6 +29,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property int|null $direction_id
  * @property int|null $region_id
  * @property int|null $district_id
+ * @property int|null $school_id
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -35,7 +37,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'iin', 'phone', 'email', 'password', 'role', 'direction_id', 'region_id', 'district_id'])]
+#[Fillable(['name', 'iin', 'phone', 'email', 'password', 'role', 'direction_id', 'region_id', 'district_id', 'school_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -94,6 +96,22 @@ class User extends Authenticatable implements PasskeyUser
     public function district(): BelongsTo
     {
         return $this->belongsTo(District::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'school_id');
+    }
+
+    /**
+     * @return HasMany<User, $this>
+     */
+    public function students(): HasMany
+    {
+        return $this->hasMany(User::class, 'school_id');
     }
 
     public function mustSelectDirection(): bool

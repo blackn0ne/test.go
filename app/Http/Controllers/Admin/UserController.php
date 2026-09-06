@@ -37,6 +37,7 @@ class UserController extends Controller
         return Inertia::render('admin/users/Create', [
             'roles' => $this->roleOptions(),
             ...$this->locationOptions(),
+            'schools' => $this->schoolOptions(),
         ]);
     }
 
@@ -70,9 +71,11 @@ class UserController extends Controller
                 'role',
                 'region_id',
                 'district_id',
+                'school_id',
             ]),
             'roles' => $this->roleOptions(),
             ...$this->locationOptions(),
+            'schools' => $this->schoolOptions(),
         ]);
     }
 
@@ -139,5 +142,16 @@ class UserController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'region_id']),
         ];
+    }
+
+    /**
+     * @return Collection<int, array{id: int, name: string}>
+     */
+    private function schoolOptions(): Collection
+    {
+        return User::query()
+            ->where('role', UserRole::School)
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 }

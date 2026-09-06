@@ -23,6 +23,11 @@ type DistrictOption = {
     region_id: number;
 };
 
+type SchoolOption = {
+    id: number;
+    name: string;
+};
+
 defineOptions({
     layout: {
         breadcrumbs: [
@@ -42,6 +47,7 @@ defineProps<{
     roles: RoleOption[];
     regions: RegionOption[];
     districts: DistrictOption[];
+    schools: SchoolOption[];
 }>();
 </script>
 
@@ -64,6 +70,7 @@ defineProps<{
                 :roles="roles"
                 :regions="regions"
                 :districts="districts"
+                :schools="schools"
                 :errors="errors"
             />
 

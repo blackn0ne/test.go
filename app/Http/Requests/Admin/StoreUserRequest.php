@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Concerns\PasswordValidationRules;
 use App\Enums\UserRole;
 use App\Http\Requests\Admin\Concerns\ValidatesOptionalRegionDistrict;
+use App\Http\Requests\Admin\Concerns\ValidatesStudentSchool;
 use App\Models\User;
 use App\Support\UserContact;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -15,6 +16,7 @@ class StoreUserRequest extends FormRequest
 {
     use PasswordValidationRules;
     use ValidatesOptionalRegionDistrict;
+    use ValidatesStudentSchool;
 
     protected function prepareForValidation(): void
     {
@@ -28,6 +30,7 @@ class StoreUserRequest extends FormRequest
         }
 
         $this->prepareRegionDistrict();
+        $this->prepareStudentSchool();
     }
 
     /**
@@ -43,6 +46,7 @@ class StoreUserRequest extends FormRequest
             'password' => $this->passwordRules(),
             'role' => ['required', Rule::enum(UserRole::class)],
             ...$this->regionDistrictRules(),
+            ...$this->studentSchoolRules(),
         ];
     }
 
@@ -64,6 +68,7 @@ class StoreUserRequest extends FormRequest
             'phone.required' => 'Укажите номер телефона.',
             'phone.regex' => 'Введите корректный номер телефона.',
             'phone.unique' => 'Пользователь с таким телефоном уже существует.',
+            ...$this->studentSchoolMessages(),
         ];
     }
 }

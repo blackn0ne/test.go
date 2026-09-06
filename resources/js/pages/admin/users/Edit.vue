@@ -23,6 +23,11 @@ type DistrictOption = {
     region_id: number;
 };
 
+type SchoolOption = {
+    id: number;
+    name: string;
+};
+
 type EditableUser = {
     id: number;
     name: string;
@@ -32,6 +37,7 @@ type EditableUser = {
     role: UserRole;
     region_id: number | null;
     district_id: number | null;
+    school_id: number | null;
 };
 
 defineOptions({
@@ -54,6 +60,7 @@ const props = defineProps<{
     roles: RoleOption[];
     regions: RegionOption[];
     districts: DistrictOption[];
+    schools: SchoolOption[];
 }>();
 </script>
 
@@ -76,6 +83,7 @@ const props = defineProps<{
                 :roles="roles"
                 :regions="regions"
                 :districts="districts"
+                :schools="schools"
                 :errors="errors"
                 :initial-name="user.name"
                 :initial-iin="user.iin ?? ''"
@@ -83,6 +91,7 @@ const props = defineProps<{
                 :initial-role="user.role"
                 :initial-region-id="user.region_id"
                 :initial-district-id="user.district_id"
+                :initial-school-id="user.school_id"
             />
 
             <div class="flex flex-wrap gap-2 pt-1">

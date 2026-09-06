@@ -65,6 +65,11 @@ test('admin can create users', function () {
 
 test('admin can create users without region and district', function () {
     $admin = User::factory()->admin()->create();
+    $school = User::factory()->school()->create([
+        'name' => 'СШ №1',
+        'iin' => '111111111111',
+        'phone' => '77001111111',
+    ]);
 
     $this->actingAs($admin)
         ->post(route('admin.users.store'), [
@@ -74,6 +79,7 @@ test('admin can create users without region and district', function () {
             'password' => 'password',
             'password_confirmation' => 'password',
             'role' => UserRole::User->value,
+            'school_id' => $school->id,
         ])
         ->assertRedirect(route('admin.users.index'));
 
@@ -81,7 +87,23 @@ test('admin can create users without region and district', function () {
 
     expect($user)->not->toBeNull()
         ->and($user->region_id)->toBeNull()
-        ->and($user->district_id)->toBeNull();
+        ->and($user->district_id)->toBeNull()
+        ->and($user->school_id)->toBe($school->id);
+});
+
+test('student requires school on create', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.users.store'), [
+            'name' => 'Студент Без Школы',
+            'iin' => '555555555555',
+            'phone' => '77005555555',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => UserRole::User->value,
+        ])
+        ->assertSessionHasErrors('school_id');
 });
 
 test('admin can update site settings', function () {

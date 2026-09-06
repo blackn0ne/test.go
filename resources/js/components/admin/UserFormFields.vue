@@ -23,12 +23,18 @@ type DistrictOption = {
     region_id: number;
 };
 
+type SchoolOption = {
+    id: number;
+    name: string;
+};
+
 const props = withDefaults(
     defineProps<{
         errors: Record<string, string>;
         roles: RoleOption[];
         regions: RegionOption[];
         districts: DistrictOption[];
+        schools: SchoolOption[];
         mode?: 'create' | 'edit';
         initialName?: string;
         initialIin?: string;
@@ -36,6 +42,7 @@ const props = withDefaults(
         initialRole?: UserRole;
         initialRegionId?: number | null;
         initialDistrictId?: number | null;
+        initialSchoolId?: number | null;
     }>(),
     {
         mode: 'create',
@@ -44,6 +51,8 @@ const props = withDefaults(
         initialPhone: '',
         initialRegionId: null,
         initialDistrictId: null,
+        initialSchoolId: null,
+        initialRole: 'user',
     },
 );
 
@@ -53,6 +62,8 @@ const phoneDisplay = ref(
     props.initialPhone ? formatPhoneInput(props.initialPhone) : '',
 );
 
+const selectedRole = ref<UserRole>(props.initialRole ?? 'user');
+
 const selectedRegionId = ref<number | ''>(
     props.initialRegionId ? props.initialRegionId : '',
 );
@@ -60,6 +71,12 @@ const selectedRegionId = ref<number | ''>(
 const selectedDistrictId = ref<number | ''>(
     props.initialDistrictId ? props.initialDistrictId : '',
 );
+
+const selectedSchoolId = ref<number | ''>(
+    props.initialSchoolId ? props.initialSchoolId : '',
+);
+
+const isStudent = computed(() => selectedRole.value === 'user');
 
 const generatedEmail = computed(() => emailFromPhone(phoneDisplay.value));
 
@@ -97,6 +114,12 @@ watch(selectedRegionId, (regionId) => {
         )
     ) {
         selectedDistrictId.value = '';
+    }
+});
+
+watch(selectedRole, (role) => {
+    if (role !== 'user') {
+        selectedSchoolId.value = '';
     }
 });
 
@@ -165,6 +188,53 @@ const inputClass = 'h-9';
             </span>
         </div>
 
+        <div :class="fieldClass">
+            <Label for="role">Роль</Label>
+            <select
+                id="role"
+                name="role"
+                v-model="selectedRole"
+                required
+                :class="selectClass"
+            >
+                <option
+                    v-for="role in roles"
+                    :key="role.value"
+                    :value="role.value"
+                >
+                    {{ role.label }}
+                </option>
+            </select>
+            <InputError :message="errors.role" />
+        </div>
+
+        <div v-if="isStudent" :class="fieldClass">
+            <Label for="school_id">Школа</Label>
+            <select
+                id="school_id"
+                name="school_id"
+                v-model="selectedSchoolId"
+                required
+                :class="selectClass"
+            >
+                <option value="" disabled>Выберите школу</option>
+                <option
+                    v-for="school in schools"
+                    :key="school.id"
+                    :value="school.id"
+                >
+                    {{ school.name }}
+                </option>
+            </select>
+            <InputError :message="errors.school_id" />
+            <p
+                v-if="schools.length === 0"
+                class="text-xs text-muted-foreground"
+            >
+                Сначала создайте пользователя с ролью «Школа»
+            </p>
+        </div>
+
         <div class="grid gap-4 sm:grid-cols-2">
             <div :class="fieldClass">
                 <Label for="region_id">Область</Label>
@@ -206,26 +276,6 @@ const inputClass = 'h-9';
                 </select>
                 <InputError :message="errors.district_id" />
             </div>
-        </div>
-
-        <div :class="fieldClass">
-            <Label for="role">Роль</Label>
-            <select
-                id="role"
-                name="role"
-                required
-                :class="selectClass"
-            >
-                <option
-                    v-for="role in roles"
-                    :key="role.value"
-                    :value="role.value"
-                    :selected="initialRole === role.value"
-                >
-                    {{ role.label }}
-                </option>
-            </select>
-            <InputError :message="errors.role" />
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2">
