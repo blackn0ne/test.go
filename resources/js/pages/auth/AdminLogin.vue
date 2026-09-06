@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import AdminAuthenticatedSessionController from '@/actions/App/Http/Controllers/Auth/AdminAuthenticatedSessionController';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
+import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { store } from '@/routes/login';
+import { store as loginStore } from '@/routes/login';
 
 defineOptions({
     layout: {
-        title: 'Вход',
-        description: 'ИИН и пароль для студентов и школ',
+        title: 'Вход администратора',
+        description: 'Email и пароль для админ-панели',
     },
 });
 
@@ -22,7 +24,7 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Вход" />
+    <Head title="Админ вход" />
 
     <div
         v-if="status"
@@ -32,25 +34,24 @@ defineProps<{
     </div>
 
     <Form
-        v-bind="store.form()"
+        v-bind="AdminAuthenticatedSessionController.store.form()"
         :reset-on-success="['password']"
         v-slot="{ errors, processing }"
         class="flex flex-col gap-5"
     >
         <div class="grid gap-4">
             <div class="grid gap-1.5">
-                <Label for="iin">ИИН</Label>
+                <Label for="email">Email</Label>
                 <Input
-                    id="iin"
-                    name="iin"
+                    id="email"
+                    type="email"
+                    name="email"
                     required
                     autofocus
-                    inputmode="numeric"
-                    maxlength="12"
-                    autocomplete="username"
-                    placeholder="12 цифр"
+                    autocomplete="email"
+                    placeholder="admin@example.com"
                 />
-                <InputError :message="errors.iin" />
+                <InputError :message="errors.email" />
             </div>
 
             <div class="grid gap-1.5">
@@ -75,5 +76,10 @@ defineProps<{
                 Войти
             </Button>
         </div>
+
+        <p class="text-center text-sm text-muted-foreground">
+            Студент или школа?
+            <TextLink :href="loginStore.url()">Вход по ИИН</TextLink>
+        </p>
     </Form>
 </template>

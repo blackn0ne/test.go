@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 test('guests cannot access admin panel', function () {
-    $this->get(route('admin.users.index'))->assertRedirect(route('login'));
+    $this->get(route('admin.users.index'))->assertRedirect(route('admin.login'));
 });
 
 test('non-admin users cannot access admin panel', function () {

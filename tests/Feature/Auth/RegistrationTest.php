@@ -18,6 +18,15 @@ test('registration routes are not available', function () {
     ])->assertNotFound();
 });
 
+test('password reset routes are not available', function () {
+    $this->get('/forgot-password')->assertNotFound();
+    $this->get('/reset-password/invalid-token')->assertNotFound();
+
+    $this->post('/forgot-password', [
+        'email' => 'test@example.com',
+    ])->assertNotFound();
+});
+
 test('users have a role with user as default', function () {
     $user = User::factory()->create();
 
@@ -34,16 +43,32 @@ test('admin seeder creates the platform admin', function () {
         ->and($admin->role)->toBe(UserRole::Admin);
 });
 
-test('admin can authenticate with seeded credentials', function () {
+test('admin can authenticate via admin login', function () {
     $this->seed(AdminSeeder::class);
 
-    $response = $this->post(route('login.store'), [
+    $response = $this->post(route('admin.login.store'), [
         'email' => 'mokhamediyar@gmail.com',
         'password' => 'password',
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('admin.users.index', absolute: false));
+});
+
+test('non admin users can not authenticate via admin login', function () {
+    $user = User::factory()->create();
+
+    $response = $this->post(route('admin.login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('email');
+});
+
+test('admin login screen can be rendered', function () {
+    $this->get(route('admin.login'))->assertOk();
 });
 
 test('user factory supports admin and school roles', function () {
