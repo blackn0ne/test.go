@@ -48,7 +48,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             { title: 'Экзамены', href: index() },
-            { title: 'Изменить', href: edit(props.exam.id) },
+            { title: 'Изменить', href: edit(0) },
         ],
     },
 });
