@@ -70,6 +70,14 @@ class Subject extends Model
     }
 
     /**
+     * @return HasMany<ExamBlueprintSection, $this>
+     */
+    public function blueprintSections(): HasMany
+    {
+        return $this->hasMany(ExamBlueprintSection::class);
+    }
+
+    /**
      * @return BelongsToMany<Direction, $this>
      */
     public function directions(): BelongsToMany

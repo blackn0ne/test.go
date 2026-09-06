@@ -6,23 +6,49 @@ use App\Enums\SubjectKind;
 use App\Models\Direction;
 use App\Models\Exam;
 use App\Models\ExamBlueprint;
+use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\User;
+use App\Support\CoreSubjects;
 use Database\Seeders\EntSystemSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('ent seeder creates core subjects and default blueprint', function () {
+function seedExistingCoreSubjects(): void
+{
+    foreach (CoreSubjects::CODES as $name) {
+        Subject::factory()->create(['name' => $name]);
+    }
+}
+
+test('ent seeder links existing core subjects and creates blueprint', function () {
+    seedExistingCoreSubjects();
+
     $this->seed(EntSystemSeeder::class);
 
     expect(Subject::query()->where('kind', SubjectKind::Core)->count())->toBe(3)
+        ->and(Subject::query()->where('is_system', true)->count())->toBe(3)
         ->and(ExamBlueprint::query()->where('is_default', true)->exists())->toBeTrue();
 
     $blueprint = ExamBlueprint::query()->where('code', 'ent_standard')->first();
 
     expect($blueprint->total_questions)->toBe(120)
         ->and($blueprint->sections)->toHaveCount(5);
+});
+
+test('ent seeder removes empty duplicate subjects created earlier', function () {
+    Subject::factory()->create(['name' => 'Оқу сауаттылығы']);
+    Subject::factory()->create([
+        'name' => 'Оқу сауаттылығы',
+        'code' => 'reading_literacy',
+        'kind' => SubjectKind::Core,
+        'is_system' => true,
+    ]);
+
+    $this->seed(EntSystemSeeder::class);
+
+    expect(Subject::query()->where('name', 'Оқу сауаттылығы')->count())->toBe(1);
 });
 
 test('admin can create direction combination', function () {
@@ -46,7 +72,9 @@ test('admin can create direction combination', function () {
 });
 
 test('admin can create generated ent exam', function () {
+    seedExistingCoreSubjects();
     $this->seed(EntSystemSeeder::class);
+
     $admin = User::factory()->admin()->create();
 
     $physics = Subject::factory()->create(['name' => 'Физика', 'kind' => SubjectKind::Profile]);
@@ -79,10 +107,32 @@ test('admin can create generated ent exam', function () {
         ->and($exam->examQuestions)->toHaveCount(0);
 });
 
-test('system subjects cannot be deleted', function () {
-    $this->seed(EntSystemSeeder::class);
+test('admin can mark subject as core via checkbox', function () {
     $admin = User::factory()->admin()->create();
+    $schoolClass = SchoolClass::factory()->create();
 
+    $subject = Subject::factory()->create(['name' => 'Оқу сауаттылығы']);
+
+    $this->actingAs($admin)
+        ->put(route('admin.directories.subjects.update', $subject), [
+            'name' => 'Оқу сауаттылығы',
+            'school_class_ids' => [$schoolClass->id],
+            'is_core' => true,
+        ])
+        ->assertRedirect(route('admin.directories.index', ['tab' => 'subjects']));
+
+    $subject->refresh();
+
+    expect($subject->is_system)->toBeTrue()
+        ->and($subject->kind)->toBe(SubjectKind::Core)
+        ->and($subject->code)->toBe('reading_literacy');
+});
+
+test('system subjects cannot be deleted', function () {
+    seedExistingCoreSubjects();
+    $this->seed(EntSystemSeeder::class);
+
+    $admin = User::factory()->admin()->create();
     $subject = Subject::query()->where('code', 'reading_literacy')->first();
 
     $this->actingAs($admin)

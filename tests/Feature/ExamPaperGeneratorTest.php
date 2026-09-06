@@ -15,6 +15,7 @@ use App\Models\Subject;
 use App\Models\User;
 use App\Services\Exams\ExamAttemptService;
 use App\Services\Exams\ExamPaperGenerator;
+use App\Support\CoreSubjects;
 use Database\Seeders\EntSystemSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -128,6 +129,9 @@ function createGeneratedEntExam(Direction $direction): Exam
 }
 
 test('generator builds 120 question paper with profile slot types', function () {
+    foreach (CoreSubjects::CODES as $name) {
+        Subject::factory()->create(['name' => $name]);
+    }
     $this->seed(EntSystemSeeder::class);
 
     $physics = Subject::factory()->create(['name' => 'Физика', 'kind' => SubjectKind::Profile]);
@@ -161,6 +165,9 @@ test('generator builds 120 question paper with profile slot types', function () 
 });
 
 test('second exam excludes questions from first submitted attempt', function () {
+    foreach (CoreSubjects::CODES as $name) {
+        Subject::factory()->create(['name' => $name]);
+    }
     $this->seed(EntSystemSeeder::class);
 
     $physics = Subject::factory()->create(['name' => 'Физика', 'kind' => SubjectKind::Profile]);

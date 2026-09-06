@@ -346,8 +346,28 @@ function toggleSubjectClass(classId: number, checked: boolean) {
                             <Input
                                 name="name"
                                 :default-value="subject.name"
+                                :disabled="subject.is_system"
                                 required
                             />
+                            <label
+                                class="flex items-center gap-2 text-sm"
+                                :class="subject.is_system ? 'opacity-70' : ''"
+                            >
+                                <input
+                                    type="checkbox"
+                                    name="is_core"
+                                    value="1"
+                                    :checked="subject.kind === 'core' || subject.is_system"
+                                    :disabled="subject.is_system"
+                                />
+                                Обязательный (ЕНТ)
+                            </label>
+                            <p
+                                v-if="subject.is_system"
+                                class="text-xs text-muted-foreground"
+                            >
+                                Системный предмет: можно менять только классы
+                            </p>
                             <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                                 <label
                                     v-for="schoolClass in classes"

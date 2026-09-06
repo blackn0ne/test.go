@@ -4,11 +4,10 @@ namespace Database\Seeders;
 
 use App\Enums\BlueprintSectionKind;
 use App\Enums\QuestionType;
-use App\Enums\SubjectKind;
 use App\Models\ExamBlueprint;
 use App\Models\ExamBlueprintSection;
 use App\Models\ExamBlueprintSlotRule;
-use App\Models\Subject;
+use App\Support\CoreSubjects;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -16,34 +15,15 @@ class EntSystemSeeder extends Seeder
 {
     use WithoutModelEvents;
 
+    /**
+     * Только шаблон ЕНТ. Обязательные предметы должны уже существовать в справочнике.
+     * Запуск: php artisan db:seed --class=EntSystemSeeder
+     */
     public function run(): void
     {
-        $reading = Subject::query()->updateOrCreate(
-            ['code' => 'reading_literacy'],
-            [
-                'name' => 'Оқу сауаттылығы',
-                'kind' => SubjectKind::Core,
-                'is_system' => true,
-            ],
-        );
-
-        $mathLiteracy = Subject::query()->updateOrCreate(
-            ['code' => 'math_literacy'],
-            [
-                'name' => 'Математикалық сауаттылық',
-                'kind' => SubjectKind::Core,
-                'is_system' => true,
-            ],
-        );
-
-        $history = Subject::query()->updateOrCreate(
-            ['code' => 'kazakhstan_history'],
-            [
-                'name' => 'Қазақстан тарихы',
-                'kind' => SubjectKind::Core,
-                'is_system' => true,
-            ],
-        );
+        $reading = CoreSubjects::resolve('reading_literacy');
+        $mathLiteracy = CoreSubjects::resolve('math_literacy');
+        $history = CoreSubjects::resolve('kazakhstan_history');
 
         $blueprint = ExamBlueprint::query()->updateOrCreate(
             ['code' => 'ent_standard'],

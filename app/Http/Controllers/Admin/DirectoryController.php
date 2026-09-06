@@ -16,6 +16,7 @@ use App\Models\Direction;
 use App\Models\Group;
 use App\Models\SchoolClass;
 use App\Models\Subject;
+use App\Support\CoreSubjects;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -94,16 +95,31 @@ class DirectoryController extends Controller
 
     public function updateSubject(UpdateSubjectRequest $request, Subject $subject): RedirectResponse
     {
+        $validated = $request->validated();
+        $wantsCore = $request->boolean('is_core');
+
+        if ($subject->is_system && ! $wantsCore) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Обязательный предмет нельзя перевести в профильный, пока он в шаблоне ЕНТ.']);
+
+            return to_route('admin.directories.index', ['tab' => 'subjects']);
+        }
+
         if ($subject->is_system) {
-            $subject->schoolClasses()->sync($request->validated('school_class_ids'));
+            $subject->schoolClasses()->sync($validated['school_class_ids']);
 
             Inertia::flash('toast', ['type' => 'success', 'message' => __('Subject updated.')]);
 
             return to_route('admin.directories.index', ['tab' => 'subjects']);
         }
 
-        $subject->update($request->safe()->only('name'));
-        $subject->schoolClasses()->sync($request->validated('school_class_ids'));
+        $subject->update(['name' => $validated['name']]);
+        $subject->schoolClasses()->sync($validated['school_class_ids']);
+
+        if ($wantsCore) {
+            CoreSubjects::markAsCore($subject);
+        } elseif ($subject->kind === SubjectKind::Core) {
+            CoreSubjects::markAsProfile($subject);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Subject updated.')]);
 
