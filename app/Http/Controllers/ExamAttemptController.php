@@ -20,7 +20,7 @@ class ExamAttemptController extends Controller
         private readonly ExamAttemptService $attempts,
     ) {}
 
-    public function show(Request $request, Exam $exam): Response
+    public function show(Request $request, Exam $exam): Response|RedirectResponse
     {
         if (! $exam->isAvailableNow()) {
             abort(403, 'Экзамен недоступен.');
