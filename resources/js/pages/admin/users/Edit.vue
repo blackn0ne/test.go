@@ -12,6 +12,17 @@ type RoleOption = {
     label: string;
 };
 
+type RegionOption = {
+    id: number;
+    name: string;
+};
+
+type DistrictOption = {
+    id: number;
+    name: string;
+    region_id: number;
+};
+
 type EditableUser = {
     id: number;
     name: string;
@@ -19,6 +30,8 @@ type EditableUser = {
     phone: string | null;
     email: string;
     role: UserRole;
+    region_id: number | null;
+    district_id: number | null;
 };
 
 defineOptions({
@@ -39,6 +52,8 @@ defineOptions({
 const props = defineProps<{
     user: EditableUser;
     roles: RoleOption[];
+    regions: RegionOption[];
+    districts: DistrictOption[];
 }>();
 </script>
 
@@ -59,11 +74,15 @@ const props = defineProps<{
             <UserFormFields
                 mode="edit"
                 :roles="roles"
+                :regions="regions"
+                :districts="districts"
                 :errors="errors"
                 :initial-name="user.name"
                 :initial-iin="user.iin ?? ''"
                 :initial-phone="user.phone ?? ''"
                 :initial-role="user.role"
+                :initial-region-id="user.region_id"
+                :initial-district-id="user.district_id"
             />
 
             <div class="flex flex-wrap gap-2 pt-1">

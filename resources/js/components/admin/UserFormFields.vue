@@ -12,21 +12,38 @@ type RoleOption = {
     label: string;
 };
 
+type RegionOption = {
+    id: number;
+    name: string;
+};
+
+type DistrictOption = {
+    id: number;
+    name: string;
+    region_id: number;
+};
+
 const props = withDefaults(
     defineProps<{
         errors: Record<string, string>;
         roles: RoleOption[];
+        regions: RegionOption[];
+        districts: DistrictOption[];
         mode?: 'create' | 'edit';
         initialName?: string;
         initialIin?: string;
         initialPhone?: string;
         initialRole?: UserRole;
+        initialRegionId?: number | null;
+        initialDistrictId?: number | null;
     }>(),
     {
         mode: 'create',
         initialName: '',
         initialIin: '',
         initialPhone: '',
+        initialRegionId: null,
+        initialDistrictId: null,
     },
 );
 
@@ -36,15 +53,50 @@ const phoneDisplay = ref(
     props.initialPhone ? formatPhoneInput(props.initialPhone) : '',
 );
 
+const selectedRegionId = ref<number | ''>(
+    props.initialRegionId ? props.initialRegionId : '',
+);
+
+const selectedDistrictId = ref<number | ''>(
+    props.initialDistrictId ? props.initialDistrictId : '',
+);
+
 const generatedEmail = computed(() => emailFromPhone(phoneDisplay.value));
 
 const normalizedPhone = computed(() => normalizePhoneDigits(phoneDisplay.value));
+
+const filteredDistricts = computed(() => {
+    if (! selectedRegionId.value) {
+        return [];
+    }
+
+    return props.districts.filter(
+        (district) => district.region_id === selectedRegionId.value,
+    );
+});
 
 watch(phoneDisplay, (value) => {
     const formatted = formatPhoneInput(value);
 
     if (formatted !== value) {
         phoneDisplay.value = formatted;
+    }
+});
+
+watch(selectedRegionId, (regionId) => {
+    if (! regionId) {
+        selectedDistrictId.value = '';
+
+        return;
+    }
+
+    if (
+        selectedDistrictId.value &&
+        ! filteredDistricts.value.some(
+            (district) => district.id === selectedDistrictId.value,
+        )
+    ) {
+        selectedDistrictId.value = '';
     }
 });
 
@@ -111,6 +163,49 @@ const inputClass = 'h-9';
             <span class="font-medium">
                 {{ generatedEmail || 'будет создан автоматически' }}
             </span>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div :class="fieldClass">
+                <Label for="region_id">Область</Label>
+                <select
+                    id="region_id"
+                    name="region_id"
+                    v-model="selectedRegionId"
+                    :class="selectClass"
+                >
+                    <option value="">Не выбрано</option>
+                    <option
+                        v-for="region in regions"
+                        :key="region.id"
+                        :value="region.id"
+                    >
+                        {{ region.name }}
+                    </option>
+                </select>
+                <InputError :message="errors.region_id" />
+            </div>
+
+            <div :class="fieldClass">
+                <Label for="district_id">Район</Label>
+                <select
+                    id="district_id"
+                    name="district_id"
+                    v-model="selectedDistrictId"
+                    :class="selectClass"
+                    :disabled="! selectedRegionId"
+                >
+                    <option value="">Не выбрано</option>
+                    <option
+                        v-for="district in filteredDistricts"
+                        :key="district.id"
+                        :value="district.id"
+                    >
+                        {{ district.name }}
+                    </option>
+                </select>
+                <InputError :message="errors.district_id" />
+            </div>
         </div>
 
         <div :class="fieldClass">

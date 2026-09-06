@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\UserRole;
+use App\Http\Requests\Admin\Concerns\ValidatesOptionalRegionDistrict;
 use App\Models\User;
 use App\Support\UserContact;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rules\Password;
 
 class UpdateUserRequest extends FormRequest
 {
+    use ValidatesOptionalRegionDistrict;
+
     protected function prepareForValidation(): void
     {
         if ($this->filled('phone')) {
@@ -22,6 +25,8 @@ class UpdateUserRequest extends FormRequest
                 'email' => UserContact::emailFromPhone($normalizedPhone),
             ]);
         }
+
+        $this->prepareRegionDistrict();
     }
 
     /**
@@ -48,7 +53,13 @@ class UpdateUserRequest extends FormRequest
             ],
             'role' => ['required', Rule::enum(UserRole::class)],
             'password' => ['nullable', 'string', Password::default(), 'confirmed'],
+            ...$this->regionDistrictRules(),
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $this->validateRegionDistrict($validator);
     }
 
     /**

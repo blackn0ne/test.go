@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Models\District;
 use App\Models\Region;
 use App\Models\SiteSetting;
 use App\Models\User;
@@ -30,6 +31,14 @@ test('admin can access users page', function () {
 
 test('admin can create users', function () {
     $admin = User::factory()->admin()->create();
+    $region = Region::query()->create([
+        'name' => 'Туркестанская область',
+        'sort_order' => 1,
+    ]);
+    $district = District::query()->create([
+        'region_id' => $region->id,
+        'name' => 'Сауран ауданы',
+    ]);
 
     $this->actingAs($admin)
         ->post(route('admin.users.store'), [
@@ -39,6 +48,8 @@ test('admin can create users', function () {
             'password' => 'password',
             'password_confirmation' => 'password',
             'role' => UserRole::School->value,
+            'region_id' => $region->id,
+            'district_id' => $district->id,
         ])
         ->assertRedirect(route('admin.users.index'));
 
@@ -47,7 +58,30 @@ test('admin can create users', function () {
     expect($user)->not->toBeNull()
         ->and($user->role)->toBe(UserRole::School)
         ->and($user->phone)->toBe('77001234567')
-        ->and($user->email)->toBe('77001234567@gotest.kz');
+        ->and($user->email)->toBe('77001234567@gotest.kz')
+        ->and($user->region_id)->toBe($region->id)
+        ->and($user->district_id)->toBe($district->id);
+});
+
+test('admin can create users without region and district', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.users.store'), [
+            'name' => 'Петров Петр Петрович',
+            'iin' => '987654321098',
+            'phone' => '77009876543',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => UserRole::User->value,
+        ])
+        ->assertRedirect(route('admin.users.index'));
+
+    $user = User::query()->where('iin', '987654321098')->first();
+
+    expect($user)->not->toBeNull()
+        ->and($user->region_id)->toBeNull()
+        ->and($user->district_id)->toBeNull();
 });
 
 test('admin can update site settings', function () {

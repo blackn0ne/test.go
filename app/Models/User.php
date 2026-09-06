@@ -26,6 +26,8 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string $password
  * @property UserRole $role
  * @property int|null $direction_id
+ * @property int|null $region_id
+ * @property int|null $district_id
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -33,7 +35,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'iin', 'phone', 'email', 'password', 'role', 'direction_id'])]
+#[Fillable(['name', 'iin', 'phone', 'email', 'password', 'role', 'direction_id', 'region_id', 'district_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -76,6 +78,22 @@ class User extends Authenticatable implements PasskeyUser
     public function direction(): BelongsTo
     {
         return $this->belongsTo(Direction::class);
+    }
+
+    /**
+     * @return BelongsTo<Region, $this>
+     */
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
+    }
+
+    /**
+     * @return BelongsTo<District, $this>
+     */
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class);
     }
 
     public function mustSelectDirection(): bool

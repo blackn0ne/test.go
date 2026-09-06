@@ -12,6 +12,17 @@ type RoleOption = {
     label: string;
 };
 
+type RegionOption = {
+    id: number;
+    name: string;
+};
+
+type DistrictOption = {
+    id: number;
+    name: string;
+    region_id: number;
+};
+
 defineOptions({
     layout: {
         breadcrumbs: [
@@ -29,6 +40,8 @@ defineOptions({
 
 defineProps<{
     roles: RoleOption[];
+    regions: RegionOption[];
+    districts: DistrictOption[];
 }>();
 </script>
 
@@ -46,7 +59,13 @@ defineProps<{
             class="w-full max-w-xl space-y-5"
             v-slot="{ errors, processing }"
         >
-            <UserFormFields mode="create" :roles="roles" :errors="errors" />
+            <UserFormFields
+                mode="create"
+                :roles="roles"
+                :regions="regions"
+                :districts="districts"
+                :errors="errors"
+            />
 
             <div class="flex flex-wrap gap-2 pt-1">
                 <Button type="submit" :disabled="processing">

@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Concerns\PasswordValidationRules;
 use App\Enums\UserRole;
+use App\Http\Requests\Admin\Concerns\ValidatesOptionalRegionDistrict;
 use App\Models\User;
 use App\Support\UserContact;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -13,6 +14,7 @@ use Illuminate\Validation\Rule;
 class StoreUserRequest extends FormRequest
 {
     use PasswordValidationRules;
+    use ValidatesOptionalRegionDistrict;
 
     protected function prepareForValidation(): void
     {
@@ -24,6 +26,8 @@ class StoreUserRequest extends FormRequest
                 'email' => UserContact::emailFromPhone($normalizedPhone),
             ]);
         }
+
+        $this->prepareRegionDistrict();
     }
 
     /**
@@ -38,7 +42,13 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class)],
             'password' => $this->passwordRules(),
             'role' => ['required', Rule::enum(UserRole::class)],
+            ...$this->regionDistrictRules(),
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $this->validateRegionDistrict($validator);
     }
 
     /**

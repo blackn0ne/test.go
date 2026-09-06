@@ -6,9 +6,12 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
+use App\Models\District;
+use App\Models\Region;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -33,6 +36,7 @@ class UserController extends Controller
     {
         return Inertia::render('admin/users/Create', [
             'roles' => $this->roleOptions(),
+            ...$this->locationOptions(),
         ]);
     }
 
@@ -57,8 +61,18 @@ class UserController extends Controller
     public function edit(User $user): Response
     {
         return Inertia::render('admin/users/Edit', [
-            'user' => $user->only(['id', 'name', 'iin', 'phone', 'email', 'role']),
+            'user' => $user->only([
+                'id',
+                'name',
+                'iin',
+                'phone',
+                'email',
+                'role',
+                'region_id',
+                'district_id',
+            ]),
             'roles' => $this->roleOptions(),
+            ...$this->locationOptions(),
         ]);
     }
 
@@ -109,5 +123,21 @@ class UserController extends Controller
                 UserRole::User => 'Студент',
             },
         ])->all();
+    }
+
+    /**
+     * @return array{regions: Collection<int, array{id: int, name: string}>, districts: Collection<int, array{id: int, name: string, region_id: int}>}
+     */
+    private function locationOptions(): array
+    {
+        return [
+            'regions' => Region::query()
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'districts' => District::query()
+                ->orderBy('name')
+                ->get(['id', 'name', 'region_id']),
+        ];
     }
 }
