@@ -32,11 +32,8 @@ class StudentExamController extends Controller
             'requiresPromoCode' => true,
             'lobby' => [
                 'title' => $lobbyExam?->title ?? 'ЕНТ',
-                'period_label' => $lobbyExam !== null
-                    ? ExamPeriodFormatter::forExam($lobbyExam)
-                    : ExamPeriodFormatter::label(now(), null),
+                'period_label' => ExamPeriodFormatter::currentMonthYearKazakh(),
                 'available' => $exam !== null,
-                'status_label' => $lobbyExam?->status->label(),
             ],
         ]);
     }

@@ -14,6 +14,7 @@ use App\Models\QuestionOption;
 use App\Models\Subject;
 use App\Models\User;
 use App\Support\CoreSubjects;
+use App\Support\ExamPeriodFormatter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -132,7 +133,7 @@ test('student lobby shows draft exam name and period', function () {
             ->where('lobby.title', 'БАЙҚАУ СЫНАҒЫ')
             ->where('lobby.available', false)
             ->where('exam', null)
-            ->where('lobby.status_label', 'Черновик')
+            ->where('lobby.period_label', ExamPeriodFormatter::currentMonthYearKazakh())
         );
 });
 
@@ -149,7 +150,7 @@ test('student exam lobby shows waiting state when no published exam', function (
             ->where('exam', null)
             ->where('lobby.available', false)
             ->where('lobby.title', 'ЕНТ')
-            ->has('lobby.period_label')
+            ->where('lobby.period_label', ExamPeriodFormatter::currentMonthYearKazakh())
         );
 });
 

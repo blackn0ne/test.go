@@ -3,7 +3,6 @@ import { Head } from '@inertiajs/vue3';
 import { Clock, Play } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PromoCodeModal from '@/components/exam/PromoCodeModal.vue';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import ExamScreenLayout from '@/layouts/exam/ExamScreenLayout.vue';
 import type { ExamInfo, ExamSection } from '@/types/exam';
@@ -16,7 +15,6 @@ type LobbyInfo = {
     title: string;
     period_label: string;
     available: boolean;
-    status_label?: string | null;
 };
 
 const props = defineProps<{
@@ -53,9 +51,9 @@ const canStart = computed(() => props.lobby.available && props.exam !== null);
                 class="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-16 text-center md:px-12"
             >
                 <p
-                    class="animate-in fade-in text-xs font-medium tracking-[0.24em] text-muted-foreground uppercase duration-700"
+                    class="animate-in fade-in text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase duration-700"
                 >
-                    Единое национальное тестирование
+                    ҰЛТТЫҚ БЫРЫҢҒАЙ ТЕСТІЛЕУ
                 </p>
 
                 <h1
@@ -69,15 +67,6 @@ const canStart = computed(() => props.lobby.available && props.exam !== null);
                 >
                     {{ props.lobby.period_label }}
                 </p>
-
-                <div
-                    class="animate-in fade-in mt-6 flex flex-wrap items-center justify-center gap-2 duration-700 [animation-delay:220ms]"
-                >
-                    <Badge v-if="! canStart" variant="secondary">
-                        {{ props.lobby.status_label ?? 'Ожидание' }}
-                    </Badge>
-                    <Badge v-else variant="default">Доступен</Badge>
-                </div>
 
                 <p
                     v-if="canStart && props.exam?.description"
