@@ -6,6 +6,8 @@ use App\Enums\QuestionType;
 use App\Models\Direction;
 use App\Models\Exam;
 use App\Models\ExamQuestion;
+use App\Models\PromoCode;
+use App\Models\PromoCodeBatch;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\Subject;
@@ -56,17 +58,52 @@ function createPublishedExamWithQuestion(): Exam
 
 function createStudentWithDirection(): User
 {
+    $school = User::factory()->school()->create();
     $direction = Direction::query()->create([
         'code' => 'FIZ-MAT',
         'name' => 'Физика + Математика',
     ]);
 
-    return User::factory()->withDirection($direction)->create();
+    return User::factory()->withDirection($direction)->create([
+        'school_id' => $school->id,
+    ]);
+}
+
+function createPromoCodeForStudent(User $student, Exam $exam, User $admin, string $code = 'A1B2C'): PromoCode
+{
+    $batch = PromoCodeBatch::query()->create([
+        'school_id' => $student->school_id,
+        'year' => (int) $exam->starts_at?->year,
+        'month' => (int) $exam->starts_at?->month,
+        'coupons_per_student' => 1,
+        'students_count' => 1,
+        'total_codes' => 1,
+        'created_by' => $admin->id,
+    ]);
+
+    return PromoCode::query()->create([
+        'promo_code_batch_id' => $batch->id,
+        'school_id' => $student->school_id,
+        'year' => (int) $exam->starts_at?->year,
+        'month' => (int) $exam->starts_at?->month,
+        'code' => $code,
+    ]);
+}
+
+function startExamAsStudent(User $student, Exam $exam, PromoCode $promoCode): void
+{
+    test()->actingAs($student)
+        ->post(route('exams.start', $exam), ['promo_code' => $promoCode->code])
+        ->assertRedirect(route('exams.take', $exam));
 }
 
 test('exam taking response never exposes is_correct', function () {
     $exam = createPublishedExamWithQuestion();
     $student = createStudentWithDirection();
+    $admin = User::factory()->admin()->create();
+    $promoCode = createPromoCodeForStudent($student, $exam, $admin);
+
+    startExamAsStudent($student, $exam, $promoCode);
 
     $this->actingAs($student)
         ->get(route('exams.take', $exam))
@@ -80,10 +117,12 @@ test('exam taking response never exposes is_correct', function () {
 
 test('student can submit exam and receive server-side score', function () {
     $exam = createPublishedExamWithQuestion();
-    $student = User::factory()->create();
+    $student = createStudentWithDirection();
+    $admin = User::factory()->admin()->create();
+    $promoCode = createPromoCodeForStudent($student, $exam, $admin);
     $service = app(ExamAttemptService::class);
 
-    $attempt = $service->startOrResume($exam, $student);
+    $attempt = $service->startOrResume($exam, $student, $promoCode->code);
     $snapshotQuestion = $attempt->snapshotQuestions->first();
     $correctSnapshotOption = $snapshotQuestion->options->firstWhere('label', 'B');
 
@@ -101,10 +140,12 @@ test('student can submit exam and receive server-side score', function () {
 
 test('student cannot submit twice', function () {
     $exam = createPublishedExamWithQuestion();
-    $student = User::factory()->create();
+    $student = createStudentWithDirection();
+    $admin = User::factory()->admin()->create();
+    $promoCode = createPromoCodeForStudent($student, $exam, $admin);
     $service = app(ExamAttemptService::class);
 
-    $attempt = $service->startOrResume($exam, $student);
+    $attempt = $service->startOrResume($exam, $student, $promoCode->code);
     $snapshotQuestion = $attempt->snapshotQuestions->first();
     $option = $snapshotQuestion->options->first();
 

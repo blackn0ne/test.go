@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import ExamAttemptController from '@/actions/App/Http/Controllers/ExamAttemptController';
 import Heading from '@/components/Heading.vue';
+import InputError from '@/components/InputError.vue';
 import RichContent from '@/components/RichContent.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ref } from 'vue';
 
 type ExamInfo = {
     id: number;
@@ -45,6 +47,18 @@ type ExamQuestion = {
     options: QuestionOption[];
 };
 
+const props = defineProps<{
+    exam: ExamInfo;
+    attempt: AttemptInfo | null;
+    questions: ExamQuestion[];
+    requiresPromoCode?: boolean;
+}>();
+
+const promoCode = ref('');
+const hasAttempt = computed(() => props.attempt !== null);
+
+const selections = ref<Record<number, number[]>>({});
+
 function shouldShowContext(question: ExamQuestion, index: number): boolean {
     if (!question.context_body) {
         return false;
@@ -58,14 +72,6 @@ function shouldShowContext(question: ExamQuestion, index: number): boolean {
 
     return previous.context_id !== question.context_id;
 }
-
-const props = defineProps<{
-    exam: ExamInfo;
-    attempt: AttemptInfo;
-    questions: ExamQuestion[];
-}>();
-
-const selections = ref<Record<number, number[]>>({});
 
 function toggleOption(
     questionId: number,
@@ -109,7 +115,57 @@ function buildAnswersPayload(): Array<{
             :description="exam.description ?? 'Ответьте на все вопросы и отправьте работу.'"
         />
 
+        <Card v-if="! hasAttempt && requiresPromoCode" class="max-w-md">
+            <CardHeader>
+                <CardTitle class="text-base">Промокод</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Form
+                    v-bind="ExamAttemptController.start.form(exam.id)"
+                    class="space-y-4"
+                    v-slot="{ errors, processing }"
+                >
+                    <div class="grid gap-2">
+                        <Label for="promo_code">Введите промокод</Label>
+                        <Input
+                            id="promo_code"
+                            name="promo_code"
+                            v-model="promoCode"
+                            maxlength="5"
+                            class="font-mono uppercase tracking-widest"
+                            placeholder="A1B2C"
+                            required
+                            autocomplete="off"
+                            @input="
+                                promoCode = promoCode
+                                    .toUpperCase()
+                                    .replace(/[^0-9A-Z]/g, '')
+                            "
+                        />
+                        <InputError :message="errors.promo_code" />
+                        <p class="text-xs text-muted-foreground">
+                            5 символов: цифры и заглавные латинские буквы
+                        </p>
+                    </div>
+                    <Button type="submit" :disabled="processing">
+                        Начать экзамен
+                    </Button>
+                </Form>
+            </CardContent>
+        </Card>
+
         <Form
+            v-else-if="! hasAttempt"
+            v-bind="ExamAttemptController.start.form(exam.id)"
+            v-slot="{ processing }"
+        >
+            <Button type="submit" :disabled="processing">
+                Начать экзамен
+            </Button>
+        </Form>
+
+        <Form
+            v-else
             v-bind="ExamAttemptController.submit.form(exam.id)"
             :transform="(data) => ({ ...data, answers: buildAnswersPayload() })"
             class="space-y-6"

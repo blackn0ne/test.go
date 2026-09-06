@@ -7,6 +7,7 @@ import {
     CircleHelp,
     LayoutGrid,
     Settings,
+    Ticket,
     Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
@@ -25,6 +26,7 @@ import {
 import { dashboard } from '@/routes';
 import { index as adminDirectories } from '@/routes/admin/directories';
 import { index as adminExams } from '@/routes/admin/exams';
+import { index as adminPromoCodes } from '@/routes/admin/promo-codes';
 import { index as adminQuestions } from '@/routes/admin/questions';
 import { index as adminReports } from '@/routes/admin/reports';
 import { edit as adminSettings } from '@/routes/admin/settings';
@@ -62,6 +64,11 @@ const mainNavItems = computed<NavItem[]>(() => {
                 title: 'Экзамены',
                 href: adminExams(),
                 icon: ClipboardList,
+            },
+            {
+                title: 'Промокоды',
+                href: adminPromoCodes(),
+                icon: Ticket,
             },
             {
                 title: 'Отчёты',

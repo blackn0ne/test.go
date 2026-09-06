@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DirectoryController;
 use App\Http\Controllers\Admin\EditorUploadController;
 use App\Http\Controllers\Admin\ExamController;
+use App\Http\Controllers\Admin\PromoCodeController;
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserController;
@@ -20,6 +21,9 @@ Route::middleware(['auth', 'verified', 'admin'])
             ->name('editor-uploads.store');
 
         Route::resource('exams', ExamController::class)->only(['index', 'create', 'store']);
+        Route::get('promo-codes', [PromoCodeController::class, 'index'])->name('promo-codes.index');
+        Route::get('promo-codes/create', [PromoCodeController::class, 'create'])->name('promo-codes.create');
+        Route::post('promo-codes', [PromoCodeController::class, 'store'])->name('promo-codes.store');
         Route::inertia('reports', 'admin/reports/Index')->name('reports.index');
 
         Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');

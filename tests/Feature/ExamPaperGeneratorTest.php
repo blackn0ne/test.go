@@ -8,6 +8,8 @@ use App\Enums\SubjectKind;
 use App\Models\Direction;
 use App\Models\Exam;
 use App\Models\ExamBlueprint;
+use App\Models\PromoCode;
+use App\Models\PromoCodeBatch;
 use App\Models\Question;
 use App\Models\QuestionContext;
 use App\Models\QuestionOption;
@@ -181,11 +183,40 @@ test('second exam excludes questions from first submitted attempt', function () 
 
     seedEntQuestionBank($direction);
 
-    $student = User::factory()->create();
     $service = app(ExamAttemptService::class);
 
+    $school = User::factory()->school()->create();
+    $student = User::factory()->create(['school_id' => $school->id]);
+    $admin = User::factory()->admin()->create();
+
     $examOne = createGeneratedEntExam($direction);
-    $attemptOne = $service->startOrResume($examOne, $student);
+    $batch = PromoCodeBatch::query()->create([
+        'school_id' => $school->id,
+        'year' => (int) $examOne->starts_at?->year,
+        'month' => (int) $examOne->starts_at?->month,
+        'coupons_per_student' => 2,
+        'students_count' => 1,
+        'total_codes' => 2,
+        'created_by' => $admin->id,
+    ]);
+
+    PromoCode::query()->create([
+        'promo_code_batch_id' => $batch->id,
+        'school_id' => $school->id,
+        'year' => (int) $examOne->starts_at?->year,
+        'month' => (int) $examOne->starts_at?->month,
+        'code' => 'AAA11',
+    ]);
+
+    PromoCode::query()->create([
+        'promo_code_batch_id' => $batch->id,
+        'school_id' => $school->id,
+        'year' => (int) $examOne->starts_at?->year,
+        'month' => (int) $examOne->starts_at?->month,
+        'code' => 'BBB22',
+    ]);
+
+    $attemptOne = $service->startOrResume($examOne, $student, 'AAA11');
     $firstQuestionIds = $attemptOne->snapshotQuestions->pluck('question_id')->all();
 
     $attemptOne->update([
@@ -195,7 +226,7 @@ test('second exam excludes questions from first submitted attempt', function () 
 
     $examTwo = createGeneratedEntExam($direction);
     $examTwo->update(['title' => 'ЕНТ тест 2']);
-    $attemptTwo = $service->startOrResume($examTwo, $student);
+    $attemptTwo = $service->startOrResume($examTwo, $student, 'BBB22');
     $secondQuestionIds = $attemptTwo->snapshotQuestions->pluck('question_id')->all();
 
     expect(array_intersect($firstQuestionIds, $secondQuestionIds))->toBeEmpty();

@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $exam_id
  * @property int $user_id
+ * @property int|null $promo_code_id
  * @property ExamAttemptStatus $status
  * @property Carbon $started_at
  * @property Carbon|null $submitted_at
@@ -38,6 +39,7 @@ class ExamAttempt extends Model
     protected $fillable = [
         'exam_id',
         'user_id',
+        'promo_code_id',
         'status',
         'started_at',
         'submitted_at',
@@ -73,6 +75,14 @@ class ExamAttempt extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<PromoCode, $this>
+     */
+    public function promoCode(): BelongsTo
+    {
+        return $this->belongsTo(PromoCode::class);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Exam\StartExamAttemptRequest;
 use App\Http\Requests\Exam\SubmitExamAttemptRequest;
 use App\Http\Resources\Exam\ExamAttemptQuestionResource;
 use App\Models\Exam;
@@ -20,26 +21,45 @@ class ExamAttemptController extends Controller
 
     public function show(Request $request, Exam $exam): Response
     {
-        $attempt = $this->attempts->startOrResume($exam, $request->user());
+        if (! $exam->isAvailableNow()) {
+            abort(403, 'Экзамен недоступен.');
+        }
+
+        $user = $request->user();
+        $attempt = $this->attempts->findAttempt($exam, $user);
+
+        if ($attempt === null) {
+            return Inertia::render('exams/Take', [
+                'exam' => $this->examPayload($exam),
+                'attempt' => null,
+                'questions' => [],
+                'requiresPromoCode' => $user->isStudent(),
+            ]);
+        }
+
+        if ($attempt->status->value === 'submitted') {
+            abort(403, 'Вы уже завершили этот экзамен.');
+        }
 
         return Inertia::render('exams/Take', [
-            'exam' => [
-                'id' => $exam->id,
-                'title' => $exam->title,
-                'description' => $exam->description,
-                'duration_minutes' => $exam->duration_minutes,
-                'ends_at' => $exam->ends_at,
-            ],
-            'attempt' => [
-                'id' => $attempt->id,
-                'status' => $attempt->status->value,
-                'started_at' => $attempt->started_at,
-                'max_score' => $attempt->max_score,
-            ],
+            'exam' => $this->examPayload($exam),
+            'attempt' => $this->attemptPayload($attempt),
             'questions' => ExamAttemptQuestionResource::collection(
                 $attempt->snapshotQuestions,
             )->resolve(),
+            'requiresPromoCode' => false,
         ]);
+    }
+
+    public function start(StartExamAttemptRequest $request, Exam $exam): RedirectResponse
+    {
+        $this->attempts->startOrResume(
+            $exam,
+            $request->user(),
+            $request->validated('promo_code'),
+        );
+
+        return to_route('exams.take', $exam);
     }
 
     public function submit(
@@ -91,5 +111,32 @@ class ExamAttemptController extends Controller
                 'score_awarded' => $answer->score_awarded,
             ])->values(),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function examPayload(Exam $exam): array
+    {
+        return [
+            'id' => $exam->id,
+            'title' => $exam->title,
+            'description' => $exam->description,
+            'duration_minutes' => $exam->duration_minutes,
+            'ends_at' => $exam->ends_at,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function attemptPayload(ExamAttempt $attempt): array
+    {
+        return [
+            'id' => $attempt->id,
+            'status' => $attempt->status->value,
+            'started_at' => $attempt->started_at,
+            'max_score' => $attempt->max_score,
+        ];
     }
 }

@@ -10,6 +10,7 @@ use App\Models\ExamAttemptQuestion;
 use App\Models\ExamAttemptQuestionOption;
 use App\Models\Question;
 use App\Models\User;
+use App\Services\PromoCodes\PromoCodeBatchService;
 use App\Services\Questions\QuestionRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -20,9 +21,27 @@ class ExamAttemptService
         private readonly QuestionRepository $questions,
         private readonly ExamGrader $grader,
         private readonly ExamPaperGenerator $paperGenerator,
+        private readonly PromoCodeBatchService $promoCodes,
     ) {}
 
-    public function startOrResume(Exam $exam, User $user): ExamAttempt
+    public function findAttempt(Exam $exam, User $user): ?ExamAttempt
+    {
+        $attempt = ExamAttempt::query()
+            ->where('exam_id', $exam->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($attempt === null) {
+            return null;
+        }
+
+        return $attempt->load([
+            'snapshotQuestions.options',
+            'answers',
+        ]);
+    }
+
+    public function startOrResume(Exam $exam, User $user, ?string $promoCode = null): ExamAttempt
     {
         if (! $exam->isAvailableNow()) {
             throw ValidationException::withMessages([
@@ -48,7 +67,7 @@ class ExamAttemptService
             ]);
         }
 
-        return DB::transaction(function () use ($exam, $user): ExamAttempt {
+        return DB::transaction(function () use ($exam, $user, $promoCode): ExamAttempt {
             $attempt = ExamAttempt::query()->create([
                 'exam_id' => $exam->id,
                 'user_id' => $user->id,
@@ -56,6 +75,21 @@ class ExamAttemptService
                 'started_at' => now(),
                 'max_score' => 0,
             ]);
+
+            if ($user->isStudent()) {
+                if ($promoCode === null || trim($promoCode) === '') {
+                    throw ValidationException::withMessages([
+                        'promo_code' => 'Введите промокод.',
+                    ]);
+                }
+
+                $promo = $this->promoCodes->findRedeemable($promoCode, $user, $exam);
+                $this->promoCodes->redeem($promo, $user, $exam, $attempt->id);
+
+                $attempt->update([
+                    'promo_code_id' => $promo->id,
+                ]);
+            }
 
             if ($exam->isGenerated()) {
                 $this->createGeneratedSnapshots($attempt, $exam, $user);
