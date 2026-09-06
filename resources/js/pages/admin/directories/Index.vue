@@ -46,6 +46,20 @@ type GroupItem = {
     subject: { id: number; name: string };
 };
 
+type RegionItem = {
+    id: number;
+    name: string;
+    sort_order: number;
+    districts_count: number;
+};
+
+type DistrictItem = {
+    id: number;
+    name: string;
+    region_id: number;
+    region: { id: number; name: string };
+};
+
 const props = defineProps<{
     tab: string;
     classes: SchoolClassItem[];
@@ -54,6 +68,8 @@ const props = defineProps<{
     profileSubjects: ProfileSubjectItem[];
     directions: DirectionItem[];
     groups: GroupItem[];
+    regions: RegionItem[];
+    districts: DistrictItem[];
 }>();
 
 defineOptions({
@@ -72,6 +88,8 @@ const tabs = [
     { key: 'subjects', label: 'Предметы' },
     { key: 'directions', label: 'Направления' },
     { key: 'groups', label: 'Группы' },
+    { key: 'regions', label: 'Области' },
+    { key: 'districts', label: 'Районы' },
 ] as const;
 
 const activeTab = computed(() => props.tab || 'classes');
@@ -80,6 +98,8 @@ const editingClassId = ref<number | null>(null);
 const editingSubjectId = ref<number | null>(null);
 const editingDirectionId = ref<number | null>(null);
 const editingGroupId = ref<number | null>(null);
+const editingRegionId = ref<number | null>(null);
+const editingDistrictId = ref<number | null>(null);
 
 const newClassName = ref('');
 const newClassSortOrder = ref('0');
@@ -91,6 +111,10 @@ const newDirectionCode = ref('');
 const newDirectionName = ref('');
 const newFirstSubjectId = ref<number | ''>('');
 const newSecondSubjectId = ref<number | ''>('');
+const newRegionName = ref('');
+const newRegionSortOrder = ref('0');
+const newDistrictName = ref('');
+const newDistrictRegionId = ref<number | ''>('');
 
 function tabHref(tab: string) {
     return adminDirectories({ query: { tab } });
@@ -123,7 +147,7 @@ function toggleSubjectClass(classId: number, checked: boolean) {
     <div class="flex h-full flex-1 flex-col gap-4 p-4">
         <Heading
             title="Справочники"
-            description="Классы, предметы и группы для организации тестирования"
+            description="Классы, предметы, направления, группы, области и районы"
         />
 
         <div class="flex flex-wrap gap-2 border-b pb-2">
@@ -870,6 +894,295 @@ function toggleSubjectClass(classId: number, checked: boolean) {
                             </div>
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+        </div>
+
+        <div v-else-if="activeTab === 'regions'" class="space-y-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Добавить область</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Form
+                        v-bind="DirectoryController.storeRegion.form()"
+                        class="grid gap-4 md:grid-cols-[1fr_120px_auto]"
+                        v-slot="{ errors, processing }"
+                    >
+                        <div class="grid gap-2">
+                            <Label for="region_name">Название</Label>
+                            <Input
+                                id="region_name"
+                                name="name"
+                                v-model="newRegionName"
+                                placeholder="Например: Туркестанская область"
+                                required
+                            />
+                            <InputError :message="errors.name" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="region_sort">Порядок</Label>
+                            <Input
+                                id="region_sort"
+                                name="sort_order"
+                                type="number"
+                                min="0"
+                                v-model="newRegionSortOrder"
+                            />
+                        </div>
+                        <div class="flex items-end">
+                            <Button type="submit" :disabled="processing">
+                                Добавить
+                            </Button>
+                        </div>
+                    </Form>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Список областей</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-3">
+                    <div
+                        v-for="region in regions"
+                        :key="region.id"
+                        class="rounded-lg border p-4"
+                    >
+                        <Form
+                            v-if="editingRegionId === region.id"
+                            v-bind="
+                                DirectoryController.updateRegion.form(region.id)
+                            "
+                            class="grid gap-3 md:grid-cols-[1fr_120px_auto_auto]"
+                            v-slot="{ errors, processing }"
+                        >
+                            <Input
+                                name="name"
+                                :default-value="region.name"
+                                required
+                            />
+                            <Input
+                                name="sort_order"
+                                type="number"
+                                min="0"
+                                :default-value="String(region.sort_order)"
+                            />
+                            <Button type="submit" size="sm" :disabled="processing">
+                                Сохранить
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                @click="editingRegionId = null"
+                            >
+                                Отмена
+                            </Button>
+                            <InputError :message="errors.name" />
+                        </Form>
+                        <div
+                            v-else
+                            class="flex items-center justify-between gap-3"
+                        >
+                            <div>
+                                <p class="font-medium">{{ region.name }}</p>
+                                <p class="text-sm text-muted-foreground">
+                                    Районов: {{ region.districts_count }}
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    @click="editingRegionId = region.id"
+                                >
+                                    Изменить
+                                </Button>
+                                <Form
+                                    v-bind="
+                                        DirectoryController.destroyRegion.form(
+                                            region.id,
+                                        )
+                                    "
+                                >
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        variant="destructive"
+                                    >
+                                        Удалить
+                                    </Button>
+                                </Form>
+                            </div>
+                        </div>
+                    </div>
+                    <p
+                        v-if="regions.length === 0"
+                        class="text-sm text-muted-foreground"
+                    >
+                        Областей пока нет
+                    </p>
+                </CardContent>
+            </Card>
+        </div>
+
+        <div v-else-if="activeTab === 'districts'" class="space-y-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Добавить район</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Form
+                        v-bind="DirectoryController.storeDistrict.form()"
+                        class="grid gap-4 md:grid-cols-[1fr_1fr_auto]"
+                        v-slot="{ errors, processing }"
+                    >
+                        <div class="grid gap-2">
+                            <Label for="district_name">Название</Label>
+                            <Input
+                                id="district_name"
+                                name="name"
+                                v-model="newDistrictName"
+                                placeholder="Например: Сауран ауданы"
+                                required
+                            />
+                            <InputError :message="errors.name" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="district_region">Область</Label>
+                            <select
+                                id="district_region"
+                                name="region_id"
+                                required
+                                v-model="newDistrictRegionId"
+                                class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            >
+                                <option value="" disabled>
+                                    Выберите область
+                                </option>
+                                <option
+                                    v-for="region in regions"
+                                    :key="region.id"
+                                    :value="region.id"
+                                >
+                                    {{ region.name }}
+                                </option>
+                            </select>
+                            <InputError :message="errors.region_id" />
+                        </div>
+                        <div class="flex items-end">
+                            <Button
+                                type="submit"
+                                :disabled="processing || regions.length === 0"
+                            >
+                                Добавить
+                            </Button>
+                        </div>
+                    </Form>
+                    <p
+                        v-if="regions.length === 0"
+                        class="mt-3 text-sm text-muted-foreground"
+                    >
+                        Сначала добавьте область, затем районы для неё
+                    </p>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Список районов</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-3">
+                    <div
+                        v-for="district in districts"
+                        :key="district.id"
+                        class="rounded-lg border p-4"
+                    >
+                        <Form
+                            v-if="editingDistrictId === district.id"
+                            v-bind="
+                                DirectoryController.updateDistrict.form(
+                                    district.id,
+                                )
+                            "
+                            class="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto]"
+                            v-slot="{ errors, processing }"
+                        >
+                            <Input
+                                name="name"
+                                :default-value="district.name"
+                                required
+                            />
+                            <select
+                                name="region_id"
+                                required
+                                class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                            >
+                                <option
+                                    v-for="region in regions"
+                                    :key="region.id"
+                                    :value="region.id"
+                                    :selected="region.id === district.region_id"
+                                >
+                                    {{ region.name }}
+                                </option>
+                            </select>
+                            <Button type="submit" size="sm" :disabled="processing">
+                                Сохранить
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                @click="editingDistrictId = null"
+                            >
+                                Отмена
+                            </Button>
+                            <InputError :message="errors.name" />
+                        </Form>
+                        <div
+                            v-else
+                            class="flex items-center justify-between gap-3"
+                        >
+                            <div>
+                                <p class="font-medium">{{ district.name }}</p>
+                                <p class="text-sm text-muted-foreground">
+                                    {{ district.region.name }}
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    @click="editingDistrictId = district.id"
+                                >
+                                    Изменить
+                                </Button>
+                                <Form
+                                    v-bind="
+                                        DirectoryController.destroyDistrict.form(
+                                            district.id,
+                                        )
+                                    "
+                                >
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        variant="destructive"
+                                    >
+                                        Удалить
+                                    </Button>
+                                </Form>
+                            </div>
+                        </div>
+                    </div>
+                    <p
+                        v-if="districts.length === 0"
+                        class="text-sm text-muted-foreground"
+                    >
+                        Районов пока нет
+                    </p>
                 </CardContent>
             </Card>
         </div>

@@ -38,4 +38,10 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::post('directories/groups', [DirectoryController::class, 'storeGroup'])->name('directories.groups.store');
         Route::put('directories/groups/{group}', [DirectoryController::class, 'updateGroup'])->name('directories.groups.update');
         Route::delete('directories/groups/{group}', [DirectoryController::class, 'destroyGroup'])->name('directories.groups.destroy');
+        Route::post('directories/regions', [DirectoryController::class, 'storeRegion'])->name('directories.regions.store');
+        Route::put('directories/regions/{region}', [DirectoryController::class, 'updateRegion'])->name('directories.regions.update');
+        Route::delete('directories/regions/{region}', [DirectoryController::class, 'destroyRegion'])->name('directories.regions.destroy');
+        Route::post('directories/districts', [DirectoryController::class, 'storeDistrict'])->name('directories.districts.store');
+        Route::put('directories/districts/{district}', [DirectoryController::class, 'updateDistrict'])->name('directories.districts.update');
+        Route::delete('directories/districts/{district}', [DirectoryController::class, 'destroyDistrict'])->name('directories.districts.destroy');
     });

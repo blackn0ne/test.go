@@ -5,15 +5,21 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\SubjectKind;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreDirectionRequest;
+use App\Http\Requests\Admin\StoreDistrictRequest;
 use App\Http\Requests\Admin\StoreGroupRequest;
+use App\Http\Requests\Admin\StoreRegionRequest;
 use App\Http\Requests\Admin\StoreSchoolClassRequest;
 use App\Http\Requests\Admin\StoreSubjectRequest;
 use App\Http\Requests\Admin\UpdateDirectionRequest;
+use App\Http\Requests\Admin\UpdateDistrictRequest;
 use App\Http\Requests\Admin\UpdateGroupRequest;
+use App\Http\Requests\Admin\UpdateRegionRequest;
 use App\Http\Requests\Admin\UpdateSchoolClassRequest;
 use App\Http\Requests\Admin\UpdateSubjectRequest;
 use App\Models\Direction;
+use App\Models\District;
 use App\Models\Group;
+use App\Models\Region;
 use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Support\CoreSubjects;
@@ -51,6 +57,15 @@ class DirectoryController extends Controller
                 ->with('subject:id,name')
                 ->orderBy('name')
                 ->get(['id', 'name', 'subject_id']),
+            'regions' => Region::query()
+                ->withCount('districts')
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name', 'sort_order']),
+            'districts' => District::query()
+                ->with('region:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'region_id']),
         ]);
     }
 
@@ -226,5 +241,65 @@ class DirectoryController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Group deleted.')]);
 
         return to_route('admin.directories.index', ['tab' => 'groups']);
+    }
+
+    public function storeRegion(StoreRegionRequest $request): RedirectResponse
+    {
+        Region::query()->create($request->validated());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Область создана.']);
+
+        return to_route('admin.directories.index', ['tab' => 'regions']);
+    }
+
+    public function updateRegion(UpdateRegionRequest $request, Region $region): RedirectResponse
+    {
+        $region->update($request->validated());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Область обновлена.']);
+
+        return to_route('admin.directories.index', ['tab' => 'regions']);
+    }
+
+    public function destroyRegion(Region $region): RedirectResponse
+    {
+        if ($region->districts()->exists()) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Нельзя удалить область, пока в ней есть районы.']);
+
+            return to_route('admin.directories.index', ['tab' => 'regions']);
+        }
+
+        $region->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Область удалена.']);
+
+        return to_route('admin.directories.index', ['tab' => 'regions']);
+    }
+
+    public function storeDistrict(StoreDistrictRequest $request): RedirectResponse
+    {
+        District::query()->create($request->validated());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Район создан.']);
+
+        return to_route('admin.directories.index', ['tab' => 'districts']);
+    }
+
+    public function updateDistrict(UpdateDistrictRequest $request, District $district): RedirectResponse
+    {
+        $district->update($request->validated());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Район обновлён.']);
+
+        return to_route('admin.directories.index', ['tab' => 'districts']);
+    }
+
+    public function destroyDistrict(District $district): RedirectResponse
+    {
+        $district->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Район удалён.']);
+
+        return to_route('admin.directories.index', ['tab' => 'districts']);
     }
 }

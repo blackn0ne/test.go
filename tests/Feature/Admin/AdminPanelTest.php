@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Models\Region;
 use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -102,4 +103,31 @@ test('admin can manage directories', function () {
     $this->actingAs($admin)
         ->get(route('admin.directories.index', ['tab' => 'groups']))
         ->assertOk();
+
+    $this->actingAs($admin)
+        ->post(route('admin.directories.regions.store'), [
+            'name' => 'Туркестанская область',
+            'sort_order' => 1,
+        ])
+        ->assertRedirect(route('admin.directories.index', ['tab' => 'regions']));
+
+    $region = Region::query()->where('name', 'Туркестанская область')->first();
+
+    expect($region)->not->toBeNull();
+
+    $this->actingAs($admin)
+        ->post(route('admin.directories.districts.store'), [
+            'name' => 'Сауран ауданы',
+            'region_id' => $region->id,
+        ])
+        ->assertRedirect(route('admin.directories.index', ['tab' => 'districts']));
+
+    $this->actingAs($admin)
+        ->get(route('admin.directories.index', ['tab' => 'districts']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('districts', 1)
+            ->where('districts.0.name', 'Сауран ауданы')
+            ->where('districts.0.region.name', 'Туркестанская область')
+        );
 });
