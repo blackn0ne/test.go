@@ -59,6 +59,7 @@ const handleLogout = () => {
                 </span>
             </span>
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem class="cursor-default" @select.prevent>
             <Building2 class="mr-2 h-4 w-4" />
             <span class="flex flex-col items-start gap-0.5">
