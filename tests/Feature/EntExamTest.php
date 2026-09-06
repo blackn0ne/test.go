@@ -154,6 +154,7 @@ test('admin can mark subject as core via checkbox', function () {
     $this->actingAs($admin)
         ->put(route('admin.directories.subjects.update', $subject), [
             'name' => 'Оқу сауаттылығы',
+            'code' => 'reading_literacy',
             'school_class_ids' => [$schoolClass->id],
             'is_core' => true,
         ])
@@ -164,6 +165,30 @@ test('admin can mark subject as core via checkbox', function () {
     expect($subject->is_system)->toBeTrue()
         ->and($subject->kind)->toBe(SubjectKind::Core)
         ->and($subject->code)->toBe('reading_literacy');
+});
+
+test('admin can fill missing code on existing core subject', function () {
+    $admin = User::factory()->admin()->create();
+    $schoolClass = SchoolClass::factory()->create();
+
+    $subject = Subject::factory()->create([
+        'name' => 'Математикалық сауаттылық',
+        'kind' => SubjectKind::Core,
+        'is_system' => true,
+        'code' => null,
+    ]);
+    $subject->schoolClasses()->attach($schoolClass);
+
+    $this->actingAs($admin)
+        ->put(route('admin.directories.subjects.update', $subject), [
+            'name' => 'Математикалық сауаттылық',
+            'code' => 'math_literacy',
+            'school_class_ids' => [$schoolClass->id],
+            'is_core' => true,
+        ])
+        ->assertRedirect(route('admin.directories.index', ['tab' => 'subjects']));
+
+    expect($subject->fresh()->code)->toBe('math_literacy');
 });
 
 test('system subjects cannot be deleted', function () {

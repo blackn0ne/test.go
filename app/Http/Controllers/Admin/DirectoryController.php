@@ -37,7 +37,8 @@ class DirectoryController extends Controller
                 ->with('schoolClasses:id,name')
                 ->orderBy('kind')
                 ->orderBy('name')
-                ->get(['id', 'name', 'kind', 'is_system']),
+                ->get(['id', 'name', 'code', 'kind', 'is_system']),
+            'coreSubjectCodes' => CoreSubjects::CODES,
             'profileSubjects' => Subject::query()
                 ->where('kind', SubjectKind::Profile)
                 ->orderBy('name')
@@ -104,21 +105,33 @@ class DirectoryController extends Controller
             return to_route('admin.directories.index', ['tab' => 'subjects']);
         }
 
-        if ($subject->is_system) {
-            $subject->schoolClasses()->sync($validated['school_class_ids']);
+        if (! $wantsCore && $subject->kind === SubjectKind::Core) {
+            try {
+                CoreSubjects::markAsProfile($subject);
+            } catch (\RuntimeException $exception) {
+                Inertia::flash('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
 
-            Inertia::flash('toast', ['type' => 'success', 'message' => __('Subject updated.')]);
-
-            return to_route('admin.directories.index', ['tab' => 'subjects']);
+                return to_route('admin.directories.index', ['tab' => 'subjects']);
+            }
         }
 
-        $subject->update(['name' => $validated['name']]);
+        $code = $validated['code'] ?? null;
+
+        if ($wantsCore && $code === null) {
+            $code = CoreSubjects::codeForName($validated['name']);
+        }
+
+        $subject->update([
+            'name' => $validated['name'],
+            'code' => $wantsCore ? $code : null,
+            'kind' => $wantsCore ? SubjectKind::Core : SubjectKind::Profile,
+            'is_system' => $wantsCore,
+        ]);
+
         $subject->schoolClasses()->sync($validated['school_class_ids']);
 
-        if ($wantsCore) {
-            CoreSubjects::markAsCore($subject);
-        } elseif ($subject->kind === SubjectKind::Core) {
-            CoreSubjects::markAsProfile($subject);
+        if ($wantsCore && $code !== null && isset(CoreSubjects::CODES[$code])) {
+            CoreSubjects::resolve($code);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Subject updated.')]);

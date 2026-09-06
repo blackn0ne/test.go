@@ -21,6 +21,7 @@ type SchoolClassItem = {
 type SubjectItem = {
     id: number;
     name: string;
+    code: string | null;
     kind: string;
     is_system: boolean;
     school_classes: Array<{ id: number; name: string }>;
@@ -49,6 +50,7 @@ const props = defineProps<{
     tab: string;
     classes: SchoolClassItem[];
     subjects: SubjectItem[];
+    coreSubjectCodes: Record<string, string>;
     profileSubjects: ProfileSubjectItem[];
     directions: DirectionItem[];
     groups: GroupItem[];
@@ -92,6 +94,14 @@ const newSecondSubjectId = ref<number | ''>('');
 
 function tabHref(tab: string) {
     return adminDirectories({ query: { tab } });
+}
+
+function suggestedCodeForSubject(name: string): string {
+    const entry = Object.entries(props.coreSubjectCodes).find(
+        ([, canonicalName]) => canonicalName === name,
+    );
+
+    return entry?.[0] ?? '';
 }
 
 function toggleSubjectClass(classId: number, checked: boolean) {
@@ -343,21 +353,53 @@ function toggleSubjectClass(classId: number, checked: boolean) {
                             class="space-y-3"
                             v-slot="{ errors, processing }"
                         >
-                            <Input
-                                name="name"
-                                :default-value="subject.name"
-                                :disabled="subject.is_system"
-                                required
-                            />
-                            <label
-                                class="flex items-center gap-2 text-sm"
-                                :class="subject.is_system ? 'opacity-70' : ''"
-                            >
+                            <div class="grid gap-2">
+                                <Label>Название</Label>
+                                <Input
+                                    name="name"
+                                    :default-value="subject.name"
+                                    required
+                                />
+                                <InputError :message="errors.name" />
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label>Код</Label>
+                                <Input
+                                    name="code"
+                                    :default-value="
+                                        subject.code ??
+                                        suggestedCodeForSubject(subject.name)
+                                    "
+                                    placeholder="reading_literacy"
+                                    :required="
+                                        subject.kind === 'core' ||
+                                        subject.is_system
+                                    "
+                                />
+                                <p class="text-xs text-muted-foreground">
+                                    Латиница, цифры, дефис. Для ЕНТ:
+                                    reading_literacy, math_literacy,
+                                    kazakhstan_history
+                                </p>
+                                <InputError :message="errors.code" />
+                            </div>
+
+                            <label class="flex items-center gap-2 text-sm">
+                                <input
+                                    v-if="subject.is_system"
+                                    type="hidden"
+                                    name="is_core"
+                                    value="1"
+                                />
                                 <input
                                     type="checkbox"
                                     name="is_core"
                                     value="1"
-                                    :checked="subject.kind === 'core' || subject.is_system"
+                                    :checked="
+                                        subject.kind === 'core' ||
+                                        subject.is_system
+                                    "
                                     :disabled="subject.is_system"
                                 />
                                 Обязательный (ЕНТ)
@@ -366,7 +408,8 @@ function toggleSubjectClass(classId: number, checked: boolean) {
                                 v-if="subject.is_system"
                                 class="text-xs text-muted-foreground"
                             >
-                                Системный предмет: можно менять только классы
+                                Системный предмет нельзя снять с ЕНТ, пока он в
+                                шаблоне
                             </p>
                             <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                                 <label
@@ -405,18 +448,30 @@ function toggleSubjectClass(classId: number, checked: boolean) {
                                     Отмена
                                 </Button>
                             </div>
-                            <InputError :message="errors.name" />
+                            <InputError :message="errors.school_class_ids" />
                         </Form>
 
                         <div v-else class="space-y-2">
                             <div
-                                class="flex items-center justify-between gap-3"
+                                class="flex flex-wrap items-start justify-between gap-3"
                             >
-                                <p class="font-medium">{{ subject.name }}</p>
-                                <Badge v-if="subject.is_system" variant="outline">
-                                    Системный
-                                </Badge>
-                                <div class="flex gap-2">
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-medium">{{ subject.name }}</p>
+                                    <p
+                                        v-if="subject.code"
+                                        class="text-xs text-muted-foreground"
+                                    >
+                                        {{ subject.code }}
+                                    </p>
+                                    <Badge
+                                        v-if="subject.is_system"
+                                        class="mt-1"
+                                        variant="outline"
+                                    >
+                                        Системный
+                                    </Badge>
+                                </div>
+                                <div class="flex shrink-0 gap-2">
                                     <Button
                                         size="sm"
                                         variant="outline"
