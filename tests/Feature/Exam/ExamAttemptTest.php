@@ -111,6 +111,8 @@ test('exam taking response never exposes is_correct', function () {
         ->assertInertia(fn ($page) => $page
             ->has('questions', 1)
             ->has('questions.0.options', 4)
+            ->where('questions.0.options.0.label', 'A')
+            ->has('questions.0.options.0.content')
             ->missing('questions.0.options.0.is_correct')
         );
 });

@@ -26,8 +26,10 @@ class ExamAttemptQuestionResource extends JsonResource
             'context_id' => $this->question_context_id,
             'context_title' => $this->context_title,
             'context_body' => $this->context_body,
-            'options' => ExamAttemptQuestionOptionResource::collection(
-                $this->whenLoaded('options'),
+            'options' => $this->when(
+                $this->relationLoaded('options'),
+                fn (): array => ExamAttemptQuestionOptionResource::collection($this->options)->resolve(),
+                [],
             ),
         ];
     }
