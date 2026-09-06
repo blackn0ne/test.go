@@ -19,6 +19,7 @@ type Props = {
     showTimer?: boolean;
     showFinish?: boolean;
     finishFormId?: string;
+    lobbyMode?: boolean;
 };
 
 const props = withDefaults(defineProps<Props>(), {
@@ -31,6 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
     showTimer: false,
     showFinish: false,
     finishFormId: 'exam-submit-form',
+    lobbyMode: false,
 });
 
 const emit = defineEmits<{
@@ -67,7 +69,14 @@ provide('openDirectionModal', () => {
             :interactive="props.interactiveSections"
             @select-section="emit('selectSection', $event)"
         />
-        <AppContent variant="sidebar" class="overflow-x-hidden">
+        <AppContent
+            variant="sidebar"
+            :class="
+                props.lobbyMode
+                    ? 'overflow-x-hidden bg-gradient-to-br from-sky-100/40 via-background to-violet-100/30 dark:from-sky-950/30 dark:via-background dark:to-violet-950/20'
+                    : 'overflow-x-hidden'
+            "
+        >
             <ExamScreenHeader
                 :title="props.headerTitle"
                 :timer="props.timer"
@@ -75,6 +84,7 @@ provide('openDirectionModal', () => {
                 :show-timer="props.showTimer"
                 :show-finish="props.showFinish"
                 :finish-form-id="props.finishFormId"
+                :lobby-mode="props.lobbyMode"
             />
             <slot />
         </AppContent>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { Clock3, Flag, GraduationCap, Sparkles } from '@lucide/vue';
+import { Clock3, Flag, GraduationCap } from '@lucide/vue';
 import { computed, inject } from 'vue';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -14,6 +14,7 @@ type Props = {
     showTimer?: boolean;
     showFinish?: boolean;
     finishFormId?: string;
+    lobbyMode?: boolean;
 };
 
 withDefaults(defineProps<Props>(), {
@@ -23,6 +24,7 @@ withDefaults(defineProps<Props>(), {
     showTimer: false,
     showFinish: false,
     finishFormId: 'exam-submit-form',
+    lobbyMode: false,
 });
 
 const page = usePage();
@@ -36,17 +38,22 @@ const openDirectionModal = inject<(() => void) | undefined>(
 
 <template>
     <header
-        class="flex h-16 shrink-0 items-center gap-3 border-b border-border/60 bg-background/80 px-4 backdrop-blur-md transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6"
+        class="flex h-16 shrink-0 items-center gap-3 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6"
+        :class="
+            cn(
+                lobbyMode
+                    ? 'border-b border-white/20 bg-gradient-to-r from-sky-400/15 via-violet-400/10 to-emerald-400/15 backdrop-blur-xl'
+                    : 'border-b border-border/60 bg-background/80 backdrop-blur-md',
+            )
+        "
     >
         <SidebarTrigger class="-ml-1 shrink-0" />
 
-        <div class="flex min-w-0 flex-1 items-center gap-2.5">
-            <div
-                class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+        <div class="flex min-w-0 flex-1 items-center">
+            <h1
+                class="truncate text-sm font-medium md:text-base"
+                :class="lobbyMode ? 'text-foreground/90' : 'font-semibold'"
             >
-                <Sparkles class="size-4" />
-            </div>
-            <h1 class="truncate text-sm font-semibold md:text-base">
                 {{ title }}
             </h1>
         </div>

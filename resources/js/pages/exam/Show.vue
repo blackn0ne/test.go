@@ -27,17 +27,23 @@ const promoModalOpen = ref(false);
 const promoCode = ref('');
 
 const canStart = computed(() => props.lobby.available && props.exam !== null);
+
+const headerTitle = computed(
+    () =>
+        `${props.lobby.title.toLocaleLowerCase('kk-KZ')} — ${props.lobby.period_label}`,
+);
 </script>
 
 <template>
     <ExamScreenLayout
         :sections="props.sections"
-        :header-title="props.lobby.title"
+        :header-title="headerTitle"
+        lobby-mode
     >
         <Head :title="props.lobby.title" />
 
         <div
-            class="exam-lobby relative flex min-h-[calc(100dvh-4rem)] flex-1 flex-col overflow-hidden"
+            class="exam-lobby relative flex min-h-[calc(100dvh-4rem)] flex-1 flex-col overflow-hidden bg-transparent"
         >
             <!-- Animated mesh background -->
             <div class="pointer-events-none absolute inset-0 exam-lobby-grid" />
@@ -54,7 +60,7 @@ const canStart = computed(() => props.lobby.available && props.exam !== null);
                 class="exam-lobby-orb exam-lobby-orb-d pointer-events-none absolute top-1/2 left-1/2 size-[18rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-300/20 blur-3xl"
             />
             <div
-                class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,hsl(var(--background)/0.55)_68%,hsl(var(--background))_100%)]"
+                class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,hsl(var(--background)/0.35)_72%,hsl(var(--background)/0.55)_100%)]"
             />
 
             <div
