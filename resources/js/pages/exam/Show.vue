@@ -27,17 +27,11 @@ const promoModalOpen = ref(false);
 const promoCode = ref('');
 
 const canStart = computed(() => props.lobby.available && props.exam !== null);
-
-const headerTitle = computed(
-    () =>
-        `${props.lobby.title.toLocaleLowerCase('kk-KZ')} — ${props.lobby.period_label}`,
-);
 </script>
 
 <template>
     <ExamScreenLayout
         :sections="props.sections"
-        :header-title="headerTitle"
         lobby-mode
     >
         <Head :title="props.lobby.title" />

@@ -49,14 +49,12 @@ const openDirectionModal = inject<(() => void) | undefined>(
     >
         <SidebarTrigger class="-ml-1 shrink-0" />
 
-        <div class="flex min-w-0 flex-1 items-center">
-            <h1
-                class="truncate text-sm font-medium md:text-base"
-                :class="lobbyMode ? 'text-foreground/90' : 'font-semibold'"
-            >
+        <div v-if="! lobbyMode" class="flex min-w-0 flex-1 items-center">
+            <h1 class="truncate text-sm font-semibold md:text-base">
                 {{ title }}
             </h1>
         </div>
+        <div v-else class="flex-1" />
 
         <div v-if="showTimer && timer" class="flex items-center gap-2">
             <div
