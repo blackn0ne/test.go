@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { Play, Sparkles } from '@lucide/vue';
-import { ref } from 'vue';
+import { Clock, Play, Sparkles } from '@lucide/vue';
+import { computed, ref } from 'vue';
 import PromoCodeModal from '@/components/exam/PromoCodeModal.vue';
 import { Button } from '@/components/ui/button';
 import ExamScreenLayout from '@/layouts/exam/ExamScreenLayout.vue';
@@ -11,28 +11,34 @@ defineOptions({
     layout: null,
 });
 
+type LobbyInfo = {
+    title: string;
+    period_label: string;
+    available: boolean;
+};
+
 const props = defineProps<{
     exam: ExamInfo | null;
     sections: ExamSection[];
     requiresPromoCode: boolean;
+    lobby: LobbyInfo;
 }>();
 
 const promoModalOpen = ref(false);
 const promoCode = ref('');
+
+const canStart = computed(() => props.lobby.available && props.exam !== null);
 </script>
 
 <template>
     <ExamScreenLayout
         :sections="props.sections"
-        :header-title="props.exam?.title ?? 'ЕНТ'"
+        header-title="ЕНТ"
     >
-        <Head :title="props.exam?.title ?? 'ЕНТ'" />
+        <Head title="ЕНТ" />
 
         <div class="flex flex-1 flex-col p-4 lg:p-8">
-            <div
-                v-if="props.exam"
-                class="flex flex-1 items-center justify-center"
-            >
+            <div class="flex flex-1 items-center justify-center">
                 <div
                     class="relative w-full max-w-2xl overflow-hidden rounded-3xl border bg-card p-8 shadow-sm md:p-12"
                 >
@@ -61,23 +67,31 @@ const promoCode = ref('');
                             <h2
                                 class="animate-in fade-in slide-in-from-bottom-4 text-3xl font-bold tracking-tight duration-700 md:text-4xl"
                             >
-                                {{ props.exam.title }}
+                                {{ props.lobby.title }}
                             </h2>
                             <p
-                                v-if="props.exam.period_label"
                                 class="animate-in fade-in slide-in-from-bottom-2 text-lg text-muted-foreground duration-700 [animation-delay:150ms]"
                             >
-                                {{ props.exam.period_label }}
+                                {{ props.lobby.period_label }}
                             </p>
                             <p
-                                v-if="props.exam.description"
+                                v-if="canStart && props.exam?.description"
                                 class="animate-in fade-in mx-auto max-w-lg text-sm text-muted-foreground duration-700 [animation-delay:300ms]"
                             >
                                 {{ props.exam.description }}
                             </p>
+                            <p
+                                v-else-if="! canStart"
+                                class="animate-in fade-in mx-auto max-w-lg text-sm text-muted-foreground duration-700 [animation-delay:300ms]"
+                            >
+                                Экзамен для вашего направления ещё не
+                                опубликован. Когда администратор откроет доступ,
+                                кнопка «Начать» станет активной.
+                            </p>
                         </div>
 
                         <Button
+                            v-if="canStart"
                             size="lg"
                             class="animate-in fade-in zoom-in-95 min-w-44 gap-2 duration-700 [animation-delay:450ms]"
                             data-test="exam-start-button"
@@ -86,24 +100,16 @@ const promoCode = ref('');
                             <Play class="size-4" />
                             Начать
                         </Button>
+                        <Button
+                            v-else
+                            size="lg"
+                            class="animate-in fade-in zoom-in-95 min-w-44 gap-2 duration-700 [animation-delay:450ms]"
+                            disabled
+                        >
+                            <Clock class="size-4" />
+                            Ожидание
+                        </Button>
                     </div>
-                </div>
-            </div>
-
-            <div
-                v-else
-                class="flex flex-1 items-center justify-center"
-            >
-                <div
-                    class="max-w-md rounded-2xl border bg-card p-8 text-center shadow-sm"
-                >
-                    <h2 class="text-lg font-semibold">
-                        Экзамен пока недоступен
-                    </h2>
-                    <p class="mt-2 text-sm text-muted-foreground">
-                        Когда администратор опубликует экзамен для вашего
-                        направления, он появится здесь.
-                    </p>
                 </div>
             </div>
         </div>

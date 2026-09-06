@@ -28,6 +28,13 @@ class StudentExamController extends Controller
             'exam' => $exam ? $this->examPayload($exam) : null,
             'sections' => ExamSectionCatalog::forUser($user),
             'requiresPromoCode' => true,
+            'lobby' => [
+                'title' => $exam?->title ?? 'ЕНТ',
+                'period_label' => $exam !== null && $exam->starts_at !== null
+                    ? mb_convert_case($exam->starts_at->translatedFormat('F'), MB_CASE_TITLE).' '.$exam->starts_at->year
+                    : mb_convert_case(now()->translatedFormat('F'), MB_CASE_TITLE).' '.now()->year,
+                'available' => $exam !== null,
+            ],
         ]);
     }
 

@@ -91,6 +91,8 @@ test('student exam screen shows lobby with sections and exam info', function () 
             ->component('exam/Show')
             ->where('exam.id', $exam->id)
             ->where('exam.title', 'ЕНТ 2026')
+            ->where('lobby.available', true)
+            ->where('lobby.title', 'ЕНТ 2026')
             ->has('sections', 4)
             ->where('requiresPromoCode', true)
         );
@@ -110,6 +112,23 @@ test('student with in progress attempt is redirected from lobby to take page', f
     $this->actingAs($student)
         ->get(route('exam.show'))
         ->assertRedirect(route('exams.take', $exam));
+});
+
+test('student exam lobby shows waiting state when no published exam', function () {
+    ['student' => $student] = createStudentExamFixtures();
+
+    Exam::query()->delete();
+
+    $this->actingAs($student)
+        ->get(route('exam.show'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('exam/Show')
+            ->where('exam', null)
+            ->where('lobby.available', false)
+            ->where('lobby.title', 'ЕНТ')
+            ->has('lobby.period_label')
+        );
 });
 
 test('take page without attempt redirects to exam lobby', function () {
