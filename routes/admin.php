@@ -32,6 +32,9 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::post('directories/subjects', [DirectoryController::class, 'storeSubject'])->name('directories.subjects.store');
         Route::put('directories/subjects/{subject}', [DirectoryController::class, 'updateSubject'])->name('directories.subjects.update');
         Route::delete('directories/subjects/{subject}', [DirectoryController::class, 'destroySubject'])->name('directories.subjects.destroy');
+        Route::post('directories/directions', [DirectoryController::class, 'storeDirection'])->name('directories.directions.store');
+        Route::put('directories/directions/{direction}', [DirectoryController::class, 'updateDirection'])->name('directories.directions.update');
+        Route::delete('directories/directions/{direction}', [DirectoryController::class, 'destroyDirection'])->name('directories.directions.destroy');
         Route::post('directories/groups', [DirectoryController::class, 'storeGroup'])->name('directories.groups.store');
         Route::put('directories/groups/{group}', [DirectoryController::class, 'updateGroup'])->name('directories.groups.update');
         Route::delete('directories/groups/{group}', [DirectoryController::class, 'destroyGroup'])->name('directories.groups.destroy');

@@ -8,6 +8,7 @@ use App\Models\ExamAttempt;
 use App\Models\ExamAttemptAnswer;
 use App\Models\ExamAttemptQuestion;
 use App\Models\ExamAttemptQuestionOption;
+use App\Models\Question;
 use App\Models\User;
 use App\Services\Questions\QuestionRepository;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ class ExamAttemptService
     public function __construct(
         private readonly QuestionRepository $questions,
         private readonly ExamGrader $grader,
+        private readonly ExamPaperGenerator $paperGenerator,
     ) {}
 
     public function startOrResume(Exam $exam, User $user): ExamAttempt
@@ -52,10 +54,20 @@ class ExamAttemptService
                 'user_id' => $user->id,
                 'status' => ExamAttemptStatus::InProgress,
                 'started_at' => now(),
-                'max_score' => $this->calculateMaxScore($exam),
+                'max_score' => 0,
             ]);
 
-            $this->createSnapshots($attempt, $exam);
+            if ($exam->isGenerated()) {
+                $this->createGeneratedSnapshots($attempt, $exam, $user);
+                $maxScore = $this->calculateMaxScoreFromSnapshots($attempt);
+            } else {
+                $this->createManualSnapshots($attempt, $exam);
+                $maxScore = $this->calculateManualMaxScore($exam);
+            }
+
+            $attempt->update([
+                'max_score' => $maxScore,
+            ]);
 
             return $attempt->load([
                 'snapshotQuestions.options',
@@ -78,7 +90,6 @@ class ExamAttemptService
         return DB::transaction(function () use ($attempt, $answers): ExamAttempt {
             $attempt->load([
                 'snapshotQuestions.options',
-                'exam.examQuestions',
             ]);
 
             $totalScore = 0.0;
@@ -138,48 +149,92 @@ class ExamAttemptService
         });
     }
 
-    private function createSnapshots(ExamAttempt $attempt, Exam $exam): void
+    private function createGeneratedSnapshots(ExamAttempt $attempt, Exam $exam, User $user): void
+    {
+        $paper = $this->paperGenerator->generate($exam, $user);
+
+        foreach ($paper as $item) {
+            $this->snapshotQuestion($attempt, $item->question, $item->sortOrder, $item->sectionOrder, $item->subjectId, $item->subjectName);
+        }
+    }
+
+    private function createManualSnapshots(ExamAttempt $attempt, Exam $exam): void
     {
         $exam->load([
             'examQuestions.question.options' => fn ($query) => $query->orderBy('sort_order'),
             'examQuestions.question.context',
+            'examQuestions.question.subject',
         ]);
 
         foreach ($exam->examQuestions as $examQuestion) {
             $question = $examQuestion->question;
-            $context = $question->context;
 
-            $snapshotQuestion = ExamAttemptQuestion::query()->create([
-                'exam_attempt_id' => $attempt->id,
-                'question_id' => $question->id,
-                'question_context_id' => $context?->id,
-                'type' => $question->type,
-                'body' => $question->body,
-                'context_title' => $context?->title,
-                'context_body' => $context?->body,
-                'sort_order' => $examQuestion->sort_order,
-            ]);
-
-            foreach ($question->options as $option) {
-                ExamAttemptQuestionOption::query()->create([
-                    'exam_attempt_question_id' => $snapshotQuestion->id,
-                    'question_option_id' => $option->id,
-                    'select_group' => $option->select_group,
-                    'label' => $option->label,
-                    'content' => $option->content,
-                    'sort_order' => $option->sort_order,
-                ]);
-            }
+            $this->snapshotQuestion(
+                $attempt,
+                $question,
+                $examQuestion->sort_order,
+                sectionOrder: 0,
+                subjectId: $question->subject_id,
+                subjectName: $question->subject->name,
+                pointsOverride: $examQuestion->points_override,
+            );
         }
     }
 
-    private function calculateMaxScore(Exam $exam): float
+    private function calculateManualMaxScore(Exam $exam): float
     {
         $exam->loadMissing('examQuestions.question');
 
         return (float) $exam->examQuestions->sum(
             fn ($examQuestion) => $examQuestion->points_override
                 ?? $examQuestion->question->type->maxScore(),
+        );
+    }
+
+    private function snapshotQuestion(
+        ExamAttempt $attempt,
+        Question $question,
+        int $sortOrder,
+        int $sectionOrder,
+        int $subjectId,
+        string $subjectName,
+        ?float $pointsOverride = null,
+    ): void {
+        $question->loadMissing(['options' => fn ($query) => $query->orderBy('sort_order'), 'context']);
+        $context = $question->context;
+
+        $snapshotQuestion = ExamAttemptQuestion::query()->create([
+            'exam_attempt_id' => $attempt->id,
+            'question_id' => $question->id,
+            'question_context_id' => $context?->id,
+            'subject_id' => $subjectId,
+            'subject_name' => $subjectName,
+            'section_order' => $sectionOrder,
+            'type' => $question->type,
+            'body' => $question->body,
+            'context_title' => $context?->title,
+            'context_body' => $context?->body,
+            'sort_order' => $sortOrder,
+        ]);
+
+        foreach ($question->options as $option) {
+            ExamAttemptQuestionOption::query()->create([
+                'exam_attempt_question_id' => $snapshotQuestion->id,
+                'question_option_id' => $option->id,
+                'select_group' => $option->select_group,
+                'label' => $option->label,
+                'content' => $option->content,
+                'sort_order' => $option->sort_order,
+            ]);
+        }
+    }
+
+    private function calculateMaxScoreFromSnapshots(ExamAttempt $attempt): float
+    {
+        $attempt->loadMissing('snapshotQuestions');
+
+        return (float) $attempt->snapshotQuestions->sum(
+            fn (ExamAttemptQuestion $question) => $question->type->maxScore(),
         );
     }
 

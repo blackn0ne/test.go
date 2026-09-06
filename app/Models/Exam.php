@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ExamGenerationMode;
 use App\Enums\ExamStatus;
 use Database\Factories\ExamFactory;
 use Illuminate\Database\Eloquent\Collection;
@@ -14,7 +15,10 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property int $subject_id
+ * @property int|null $subject_id
+ * @property ExamGenerationMode $generation_mode
+ * @property int|null $exam_blueprint_id
+ * @property int|null $direction_id
  * @property int|null $group_id
  * @property int $created_by
  * @property string $title
@@ -26,7 +30,9 @@ use Illuminate\Support\Carbon;
  * @property bool $show_results_after_submit
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Subject $subject
+ * @property-read Subject|null $subject
+ * @property-read ExamBlueprint|null $blueprint
+ * @property-read Direction|null $direction
  * @property-read Group|null $group
  * @property-read User $creator
  * @property-read Collection<int, ExamQuestion> $examQuestions
@@ -43,6 +49,9 @@ class Exam extends Model
      */
     protected $fillable = [
         'subject_id',
+        'generation_mode',
+        'exam_blueprint_id',
+        'direction_id',
         'group_id',
         'created_by',
         'title',
@@ -60,6 +69,7 @@ class Exam extends Model
     protected function casts(): array
     {
         return [
+            'generation_mode' => ExamGenerationMode::class,
             'status' => ExamStatus::class,
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
@@ -73,6 +83,22 @@ class Exam extends Model
     public function subject(): BelongsTo
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    /**
+     * @return BelongsTo<ExamBlueprint, $this>
+     */
+    public function blueprint(): BelongsTo
+    {
+        return $this->belongsTo(ExamBlueprint::class, 'exam_blueprint_id');
+    }
+
+    /**
+     * @return BelongsTo<Direction, $this>
+     */
+    public function direction(): BelongsTo
+    {
+        return $this->belongsTo(Direction::class);
     }
 
     /**
@@ -116,6 +142,11 @@ class Exam extends Model
     public function attempts(): HasMany
     {
         return $this->hasMany(ExamAttempt::class);
+    }
+
+    public function isGenerated(): bool
+    {
+        return $this->generation_mode === ExamGenerationMode::Generated;
     }
 
     public function isAvailableNow(): bool

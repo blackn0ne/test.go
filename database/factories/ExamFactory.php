@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\ExamGenerationMode;
 use App\Enums\ExamStatus;
 use App\Models\Exam;
 use App\Models\Subject;
@@ -22,6 +23,9 @@ class ExamFactory extends Factory
     {
         return [
             'subject_id' => Subject::factory(),
+            'generation_mode' => ExamGenerationMode::Manual,
+            'exam_blueprint_id' => null,
+            'direction_id' => null,
             'group_id' => null,
             'created_by' => User::factory()->admin(),
             'title' => $this->faker->sentence(3),

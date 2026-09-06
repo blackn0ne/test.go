@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\SubjectKind;
 use App\Models\Subject;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -19,6 +20,8 @@ class SubjectFactory extends Factory
     {
         return [
             'name' => fake()->unique()->words(2, true),
+            'kind' => SubjectKind::Profile,
+            'is_system' => false,
         ];
     }
 }

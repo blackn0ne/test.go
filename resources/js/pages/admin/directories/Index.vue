@@ -21,7 +21,21 @@ type SchoolClassItem = {
 type SubjectItem = {
     id: number;
     name: string;
+    kind: string;
+    is_system: boolean;
     school_classes: Array<{ id: number; name: string }>;
+};
+
+type DirectionItem = {
+    id: number;
+    code: string;
+    name: string;
+    subjects: Array<{ id: number; name: string }>;
+};
+
+type ProfileSubjectItem = {
+    id: number;
+    name: string;
 };
 
 type GroupItem = {
@@ -35,6 +49,8 @@ const props = defineProps<{
     tab: string;
     classes: SchoolClassItem[];
     subjects: SubjectItem[];
+    profileSubjects: ProfileSubjectItem[];
+    directions: DirectionItem[];
     groups: GroupItem[];
 }>();
 
@@ -52,6 +68,7 @@ defineOptions({
 const tabs = [
     { key: 'classes', label: 'Классы' },
     { key: 'subjects', label: 'Предметы' },
+    { key: 'directions', label: 'Направления' },
     { key: 'groups', label: 'Группы' },
 ] as const;
 
@@ -59,6 +76,7 @@ const activeTab = computed(() => props.tab || 'classes');
 
 const editingClassId = ref<number | null>(null);
 const editingSubjectId = ref<number | null>(null);
+const editingDirectionId = ref<number | null>(null);
 const editingGroupId = ref<number | null>(null);
 
 const newClassName = ref('');
@@ -67,6 +85,10 @@ const newSubjectName = ref('');
 const newSubjectClassIds = ref<number[]>([]);
 const newGroupName = ref('');
 const newGroupSubjectId = ref<number | ''>('');
+const newDirectionCode = ref('');
+const newDirectionName = ref('');
+const newFirstSubjectId = ref<number | ''>('');
+const newSecondSubjectId = ref<number | ''>('');
 
 function tabHref(tab: string) {
     return adminDirectories({ query: { tab } });
@@ -371,6 +393,9 @@ function toggleSubjectClass(classId: number, checked: boolean) {
                                 class="flex items-center justify-between gap-3"
                             >
                                 <p class="font-medium">{{ subject.name }}</p>
+                                <Badge v-if="subject.is_system" variant="outline">
+                                    Системный
+                                </Badge>
                                 <div class="flex gap-2">
                                     <Button
                                         size="sm"
@@ -380,6 +405,7 @@ function toggleSubjectClass(classId: number, checked: boolean) {
                                         Изменить
                                     </Button>
                                     <Form
+                                        v-if="! subject.is_system"
                                         v-bind="
                                             DirectoryController.destroySubject.form(
                                                 subject.id,
@@ -411,7 +437,224 @@ function toggleSubjectClass(classId: number, checked: boolean) {
             </Card>
         </div>
 
-        <div v-else class="space-y-4">
+        <div v-else-if="activeTab === 'directions'" class="space-y-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Добавить направление</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Form
+                        v-bind="DirectoryController.storeDirection.form()"
+                        class="space-y-4"
+                        v-slot="{ errors, processing }"
+                    >
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="direction_code">Код</Label>
+                                <Input
+                                    id="direction_code"
+                                    name="code"
+                                    v-model="newDirectionCode"
+                                    placeholder="FIZ-MAT"
+                                    required
+                                />
+                                <InputError :message="errors.code" />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="direction_name">Название</Label>
+                                <Input
+                                    id="direction_name"
+                                    name="name"
+                                    v-model="newDirectionName"
+                                    placeholder="Физика + Математика"
+                                    required
+                                />
+                                <InputError :message="errors.name" />
+                            </div>
+                        </div>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="first_subject_id">Предмет 1</Label>
+                                <select
+                                    id="first_subject_id"
+                                    name="first_subject_id"
+                                    required
+                                    v-model="newFirstSubjectId"
+                                    class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                                >
+                                    <option value="" disabled>Выберите</option>
+                                    <option
+                                        v-for="subject in profileSubjects"
+                                        :key="subject.id"
+                                        :value="subject.id"
+                                    >
+                                        {{ subject.name }}
+                                    </option>
+                                </select>
+                                <InputError :message="errors.first_subject_id" />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="second_subject_id">Предмет 2</Label>
+                                <select
+                                    id="second_subject_id"
+                                    name="second_subject_id"
+                                    required
+                                    v-model="newSecondSubjectId"
+                                    class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                                >
+                                    <option value="" disabled>Выберите</option>
+                                    <option
+                                        v-for="subject in profileSubjects"
+                                        :key="subject.id"
+                                        :value="subject.id"
+                                    >
+                                        {{ subject.name }}
+                                    </option>
+                                </select>
+                                <InputError :message="errors.second_subject_id" />
+                            </div>
+                        </div>
+                        <Button type="submit" :disabled="processing">
+                            Добавить
+                        </Button>
+                    </Form>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Направления</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-3">
+                    <div
+                        v-for="direction in directions"
+                        :key="direction.id"
+                        class="rounded-lg border p-4"
+                    >
+                        <Form
+                            v-if="editingDirectionId === direction.id"
+                            v-bind="
+                                DirectoryController.updateDirection.form(
+                                    direction.id,
+                                )
+                            "
+                            class="space-y-3"
+                            v-slot="{ errors, processing }"
+                        >
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <Input
+                                    name="code"
+                                    :default-value="direction.code"
+                                    required
+                                />
+                                <Input
+                                    name="name"
+                                    :default-value="direction.name"
+                                    required
+                                />
+                            </div>
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <select
+                                    name="first_subject_id"
+                                    required
+                                    class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                                    :default-value="direction.subjects[0]?.id"
+                                >
+                                    <option
+                                        v-for="subject in profileSubjects"
+                                        :key="subject.id"
+                                        :value="subject.id"
+                                        :selected="
+                                            direction.subjects[0]?.id ===
+                                            subject.id
+                                        "
+                                    >
+                                        {{ subject.name }}
+                                    </option>
+                                </select>
+                                <select
+                                    name="second_subject_id"
+                                    required
+                                    class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                                >
+                                    <option
+                                        v-for="subject in profileSubjects"
+                                        :key="subject.id"
+                                        :value="subject.id"
+                                        :selected="
+                                            direction.subjects[1]?.id ===
+                                            subject.id
+                                        "
+                                    >
+                                        {{ subject.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="flex gap-2">
+                                <Button type="submit" size="sm" :disabled="processing">
+                                    Сохранить
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="editingDirectionId = null"
+                                >
+                                    Отмена
+                                </Button>
+                            </div>
+                            <InputError :message="errors.code" />
+                        </Form>
+                        <div v-else class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="font-medium">
+                                    {{ direction.code }} — {{ direction.name }}
+                                </p>
+                                <p class="text-sm text-muted-foreground">
+                                    {{
+                                        direction.subjects
+                                            .map((s) => s.name)
+                                            .join(' + ')
+                                    }}
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    @click="editingDirectionId = direction.id"
+                                >
+                                    Изменить
+                                </Button>
+                                <Form
+                                    v-bind="
+                                        DirectoryController.destroyDirection.form(
+                                            direction.id,
+                                        )
+                                    "
+                                >
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        variant="destructive"
+                                    >
+                                        Удалить
+                                    </Button>
+                                </Form>
+                            </div>
+                        </div>
+                    </div>
+                    <p
+                        v-if="directions.length === 0"
+                        class="text-sm text-muted-foreground"
+                    >
+                        Сначала добавьте профильные предметы, затем направления
+                    </p>
+                </CardContent>
+            </Card>
+        </div>
+
+        <div v-else-if="activeTab === 'groups'" class="space-y-4">
             <Card>
                 <CardHeader>
                     <CardTitle>Добавить группу</CardTitle>

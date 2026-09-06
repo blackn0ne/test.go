@@ -11,8 +11,12 @@ type ExamListItem = {
     title: string;
     status: string;
     status_label: string;
-    subject: { id: number; name: string };
-    questions_count: number;
+    generation_mode: string;
+    generation_mode_label: string;
+    direction: { id: number; code: string; name: string } | null;
+    blueprint: { id: number; name: string } | null;
+    subject: { id: number; name: string } | null;
+    attempts_count: number;
     starts_at: string | null;
     ends_at: string | null;
     creator: { id: number; name: string };
@@ -41,7 +45,7 @@ defineOptions({
         <div class="flex items-center justify-between gap-4">
             <Heading
                 title="Экзамены"
-                description="Экзамены с фиксированным набором вопросов и серверной проверкой"
+                description="ЕНТ с автогенерацией 120 вопросов по направлению"
             />
             <Button as-child>
                 <Link :href="create()">Создать экзамен</Link>
@@ -58,9 +62,10 @@ defineOptions({
                         <thead>
                             <tr class="border-b text-left text-muted-foreground">
                                 <th class="pb-3 pr-4 font-medium">Название</th>
-                                <th class="pb-3 pr-4 font-medium">Предмет</th>
+                                <th class="pb-3 pr-4 font-medium">Направление</th>
+                                <th class="pb-3 pr-4 font-medium">Режим</th>
                                 <th class="pb-3 pr-4 font-medium">Статус</th>
-                                <th class="pb-3 pr-4 font-medium">Вопросов</th>
+                                <th class="pb-3 pr-4 font-medium">Попыток</th>
                                 <th class="pb-3 font-medium">Автор</th>
                             </tr>
                         </thead>
@@ -74,7 +79,16 @@ defineOptions({
                                     {{ exam.title }}
                                 </td>
                                 <td class="py-3 pr-4">
-                                    {{ exam.subject.name }}
+                                    <template v-if="exam.direction">
+                                        {{ exam.direction.code }}
+                                    </template>
+                                    <template v-else-if="exam.subject">
+                                        {{ exam.subject.name }}
+                                    </template>
+                                    <span v-else class="text-muted-foreground">—</span>
+                                </td>
+                                <td class="py-3 pr-4">
+                                    {{ exam.generation_mode_label }}
                                 </td>
                                 <td class="py-3 pr-4">
                                     <Badge variant="secondary">
@@ -82,7 +96,7 @@ defineOptions({
                                     </Badge>
                                 </td>
                                 <td class="py-3 pr-4">
-                                    {{ exam.questions_count }}
+                                    {{ exam.attempts_count }}
                                 </td>
                                 <td class="py-3">
                                     {{ exam.creator.name }}
@@ -90,7 +104,7 @@ defineOptions({
                             </tr>
                             <tr v-if="exams.data.length === 0">
                                 <td
-                                    colspan="5"
+                                    colspan="6"
                                     class="py-8 text-center text-muted-foreground"
                                 >
                                     Экзамены ещё не созданы
