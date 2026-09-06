@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import {
+    ArrowLeft,
+    ArrowRight,
+    FileText,
+    Flag,
+    HelpCircle,
+} from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ExamAttemptController from '@/actions/App/Http/Controllers/ExamAttemptController';
+import ExamAnswerOptions from '@/components/exam/ExamAnswerOptions.vue';
+import ExamQuestionNavigator from '@/components/exam/ExamQuestionNavigator.vue';
 import InputError from '@/components/InputError.vue';
 import RichContent from '@/components/RichContent.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { useExamTimer } from '@/composables/useExamTimer';
 import ExamScreenLayout from '@/layouts/exam/ExamScreenLayout.vue';
-import { cn } from '@/lib/utils';
 import type {
     AttemptInfo,
     ExamInfo,
@@ -64,6 +71,13 @@ const activeSectionName = computed(
 const answeredInSection = computed(
     () =>
         visibleQuestions.value.filter(
+            (question) => (selections.value[question.id] ?? []).length > 0,
+        ).length,
+);
+
+const totalAnswered = computed(
+    () =>
+        props.questions.filter(
             (question) => (selections.value[question.id] ?? []).length > 0,
         ).length,
 );
@@ -167,174 +181,160 @@ function buildAnswersPayload(): Array<{
         <Form
             v-bind="ExamAttemptController.submit.form(props.exam.id)"
             :transform="(data) => ({ ...data, answers: buildAnswersPayload() })"
-            class="flex flex-1 flex-col gap-4 p-4 lg:p-6"
+            class="flex min-h-[calc(100dvh-4rem)] flex-1 flex-col bg-gradient-to-b from-muted/20 via-background to-background"
             v-slot="{ errors, processing }"
         >
-            <div class="space-y-3">
-                <div
-                    class="flex flex-wrap items-center justify-between gap-2"
-                >
-                    <p class="text-sm font-semibold">
-                        {{ activeSectionName }}
-                    </p>
-                    <p class="text-xs text-muted-foreground">
-                        Жауап берілді {{ answeredInSection }} /
-                        {{ visibleQuestions.length }}
-                    </p>
-                </div>
+            <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 p-4 lg:p-6">
+                <ExamQuestionNavigator
+                    :section-name="activeSectionName"
+                    :questions="visibleQuestions"
+                    :active-index="activeQuestionIndex"
+                    :answered-count="answeredInSection"
+                    :is-answered="isQuestionAnswered"
+                    @select="selectQuestion"
+                />
+
+                <InputError :message="errors.answers" />
 
                 <div
-                    class="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    v-if="activeQuestion"
+                    class="flex flex-1 flex-col gap-5"
                 >
-                    <button
-                        v-for="(question, index) in visibleQuestions"
-                        :key="question.id"
-                        type="button"
-                        :class="
-                            cn(
-                                'flex size-9 shrink-0 items-center justify-center rounded-lg border text-sm font-medium transition-all',
-                                isQuestionAnswered(question.id)
-                                    ? 'border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600'
-                                    : 'border-border bg-background hover:bg-muted/50',
-                                activeQuestionIndex === index &&
-                                    'ring-2 ring-primary ring-offset-2 ring-offset-background',
-                            )
-                        "
-                        :aria-label="`Сұрақ ${index + 1}`"
-                        :aria-current="
-                            activeQuestionIndex === index ? 'true' : undefined
-                        "
-                        @click="selectQuestion(index)"
+                    <article
+                        class="overflow-hidden rounded-2xl border border-border/60 bg-background shadow-sm"
                     >
-                        {{ index + 1 }}
-                    </button>
-                </div>
-            </div>
+                        <div
+                            class="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 bg-muted/20 px-5 py-4"
+                        >
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                                >
+                                    <HelpCircle class="size-5" />
+                                </div>
+                                <div>
+                                    <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                                        Сұрақ
+                                    </p>
+                                    <p class="text-lg font-semibold tabular-nums">
+                                        № {{ activeQuestionIndex + 1 }}
+                                        <span class="text-sm font-normal text-muted-foreground">
+                                            / {{ visibleQuestions.length }}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
 
-            <InputError :message="errors.answers" />
+                            <Badge
+                                variant="outline"
+                                class="rounded-full px-3 py-1"
+                            >
+                                {{ totalAnswered }} / {{ props.questions.length }} барлығы
+                            </Badge>
+                        </div>
 
-            <div v-if="activeQuestion" class="flex flex-1 flex-col gap-4">
-                <div class="space-y-4">
-                    <p class="text-sm font-medium text-muted-foreground">
-                        Сұрақ {{ activeQuestionIndex + 1 }}
-                    </p>
+                        <div class="space-y-6 px-5 py-6">
+                            <div
+                                v-if="shouldShowContext(activeQuestion)"
+                                class="relative overflow-hidden rounded-2xl border border-sky-500/20 bg-gradient-to-br from-sky-500/5 via-background to-background p-5"
+                            >
+                                <div
+                                    class="absolute top-0 left-0 h-full w-1 bg-sky-500"
+                                />
+                                <div
+                                    class="mb-3 flex items-center gap-2 text-sky-700 dark:text-sky-300"
+                                >
+                                    <FileText class="size-4" />
+                                    <p class="text-sm font-semibold">
+                                        {{
+                                            activeQuestion.context_title ??
+                                                'Мәтін'
+                                        }}
+                                    </p>
+                                </div>
+                                <RichContent
+                                    :content="activeQuestion.context_body ?? ''"
+                                />
+                            </div>
+
+                            <div class="space-y-4">
+                                <RichContent :content="activeQuestion.body" />
+                            </div>
+
+                            <div class="space-y-3">
+                                <p
+                                    class="flex items-center gap-2 text-sm font-medium text-muted-foreground"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full bg-primary"
+                                    />
+                                    Жауап нұсқасын таңдаңыз
+                                </p>
+
+                                <ExamAnswerOptions
+                                    :question="activeQuestion"
+                                    :is-checked="
+                                        (optionId) =>
+                                            isChecked(
+                                                activeQuestion!.id,
+                                                optionId,
+                                            )
+                                    "
+                                    @select="
+                                        selectOption(activeQuestion, $event)
+                                    "
+                                />
+                            </div>
+                        </div>
+                    </article>
 
                     <div
-                        v-if="shouldShowContext(activeQuestion)"
-                        class="rounded-xl bg-muted/30 p-4"
+                        class="sticky bottom-0 z-10 -mx-4 border-t border-border/60 bg-background/85 px-4 py-4 backdrop-blur-md lg:-mx-6 lg:px-6"
                     >
-                        <p
-                            v-if="activeQuestion.context_title"
-                            class="mb-2 text-sm font-medium"
+                        <div
+                            class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3"
                         >
-                            {{ activeQuestion.context_title }}
-                        </p>
-                        <RichContent
-                            :content="activeQuestion.context_body ?? ''"
-                        />
-                    </div>
-
-                    <RichContent :content="activeQuestion.body" />
-
-                    <div class="grid gap-2">
-                        <button
-                            v-for="option in activeQuestion.options"
-                            :key="option.id"
-                            type="button"
-                            :class="
-                                cn(
-                                    'flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors',
-                                    isChecked(activeQuestion.id, option.id)
-                                        ? 'border-primary bg-primary/5'
-                                        : 'border-border bg-background hover:bg-muted/30',
-                                )
-                            "
-                            @click="selectOption(activeQuestion, option.id)"
-                        >
-                            <Checkbox
-                                v-if="activeQuestion.type === 'multiple'"
-                                :model-value="
-                                    isChecked(activeQuestion.id, option.id)
-                                "
-                                class="pointer-events-none mt-0.5"
-                                @update:model-value="
-                                    (checked) =>
-                                        toggleOption(
-                                            activeQuestion!.id,
-                                            option.id,
-                                            activeQuestion!.type,
-                                            checked === true,
-                                        )
-                                "
-                            />
-                            <span
-                                v-else
-                                :class="
-                                    cn(
-                                        'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border',
-                                        isChecked(activeQuestion.id, option.id)
-                                            ? 'border-primary bg-primary'
-                                            : 'border-muted-foreground/40',
-                                    )
-                                "
-                            >
-                                <span
-                                    v-if="
-                                        isChecked(
-                                            activeQuestion.id,
-                                            option.id,
-                                        )
+                            <div class="flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    class="gap-2 rounded-full"
+                                    :disabled="activeQuestionIndex === 0"
+                                    @click="
+                                        selectQuestion(activeQuestionIndex - 1)
                                     "
-                                    class="size-2 rounded-full bg-primary-foreground"
-                                />
-                            </span>
-
-                            <span class="min-w-0 flex-1">
-                                <Label
-                                    class="flex cursor-pointer flex-col gap-1 font-normal"
                                 >
-                                    <span class="font-semibold">{{
-                                        option.label
-                                    }}</span>
-                                    <RichContent
-                                        v-if="option.content"
-                                        :content="option.content"
-                                        compact
-                                    />
-                                </Label>
-                            </span>
-                        </button>
-                    </div>
-                </div>
+                                    <ArrowLeft class="size-4" />
+                                    Артқа
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    class="gap-2 rounded-full"
+                                    :disabled="
+                                        activeQuestionIndex >=
+                                        visibleQuestions.length - 1
+                                    "
+                                    @click="
+                                        selectQuestion(activeQuestionIndex + 1)
+                                    "
+                                >
+                                    Алға
+                                    <ArrowRight class="size-4" />
+                                </Button>
+                            </div>
 
-                <div
-                    class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4"
-                >
-                    <div class="flex gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            :disabled="activeQuestionIndex === 0"
-                            @click="selectQuestion(activeQuestionIndex - 1)"
-                        >
-                            Артқа
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            :disabled="
-                                activeQuestionIndex >=
-                                visibleQuestions.length - 1
-                            "
-                            @click="selectQuestion(activeQuestionIndex + 1)"
-                        >
-                            Алға
-                        </Button>
+                            <Button
+                                type="submit"
+                                size="lg"
+                                class="gap-2 rounded-full px-6 shadow-md shadow-primary/15"
+                                :disabled="processing"
+                            >
+                                <Flag class="size-4" />
+                                Экзаменді аяқтау
+                            </Button>
+                        </div>
                     </div>
-
-                    <Button type="submit" size="lg" :disabled="processing">
-                        Завершить экзамен
-                    </Button>
                 </div>
             </div>
         </Form>
