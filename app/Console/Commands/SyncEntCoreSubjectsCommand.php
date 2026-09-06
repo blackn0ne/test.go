@@ -17,7 +17,8 @@ class SyncEntCoreSubjectsCommand extends Command
         $this->info('Синхронизация обязательных предметов...');
 
         foreach (CoreSubjects::resolveAll() as $subject) {
-            $this->line("  ✓ {$subject->name} (id: {$subject->id}, code: {$subject->code})");
+            $subject->loadCount('questions');
+            $this->line("  ✓ {$subject->name} (id: {$subject->id}, code: {$subject->code}, вопросов: {$subject->questions_count})");
         }
 
         if ($this->option('blueprint')) {

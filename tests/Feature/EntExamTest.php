@@ -6,6 +6,7 @@ use App\Enums\SubjectKind;
 use App\Models\Direction;
 use App\Models\Exam;
 use App\Models\ExamBlueprint;
+use App\Models\Question;
 use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\User;
@@ -49,6 +50,43 @@ test('ent seeder removes empty duplicate subjects created earlier', function () 
     $this->seed(EntSystemSeeder::class);
 
     expect(Subject::query()->where('name', 'Оқу сауаттылығы')->count())->toBe(1);
+});
+
+test('ent sync keeps original subject with questions and removes seeder duplicate', function () {
+    $original = Subject::factory()->create(['name' => 'Оқу сауаттылығы']);
+    Question::factory()->count(5)->create(['subject_id' => $original->id]);
+
+    $duplicate = Subject::factory()->create([
+        'name' => 'Оқу сауаттылығы',
+        'code' => 'reading_literacy',
+        'kind' => SubjectKind::Core,
+        'is_system' => true,
+    ]);
+
+    $resolved = CoreSubjects::resolve('reading_literacy');
+
+    expect(Subject::query()->where('name', 'Оқу сауаттылығы')->count())->toBe(1)
+        ->and($resolved->id)->toBe($original->id)
+        ->and($resolved->code)->toBe('reading_literacy')
+        ->and($resolved->is_system)->toBeTrue()
+        ->and($resolved->questions()->count())->toBe(5)
+        ->and(Subject::query()->find($duplicate->id))->toBeNull();
+});
+
+test('ent sync removes empty seeder duplicate when original has no code', function () {
+    $original = Subject::factory()->create(['name' => 'Оқу сауаттылығы']);
+
+    Subject::factory()->create([
+        'name' => 'Оқу сауаттылығы',
+        'code' => 'reading_literacy',
+        'kind' => SubjectKind::Core,
+        'is_system' => true,
+    ]);
+
+    $resolved = CoreSubjects::resolve('reading_literacy');
+
+    expect($resolved->id)->toBe($original->id)
+        ->and(Subject::query()->where('name', 'Оқу сауаттылығы')->count())->toBe(1);
 });
 
 test('admin can create direction combination', function () {

@@ -3,8 +3,13 @@
 namespace App\Support;
 
 use App\Enums\SubjectKind;
+use App\Models\Exam;
 use App\Models\ExamBlueprintSection;
+use App\Models\Group;
+use App\Models\Question;
+use App\Models\QuestionContext;
 use App\Models\Subject;
+use Illuminate\Support\Collection;
 
 final class CoreSubjects
 {
@@ -34,7 +39,7 @@ final class CoreSubjects
     }
 
     /**
-     * Находит уже существующий предмет по name/code и помечает как обязательный.
+     * Находит уже существующий предмет по name/code, сливает дубликаты и помечает как обязательный.
      */
     public static function resolve(string $code): Subject
     {
@@ -44,28 +49,33 @@ final class CoreSubjects
 
         $name = self::CODES[$code];
 
-        $subject = Subject::query()
+        /** @var Collection<int, Subject> $matches */
+        $matches = Subject::query()
+            ->withCount('questions')
             ->where('code', $code)
             ->orWhere('name', $name)
-            ->orderBy('id')
-            ->first();
+            ->get();
 
-        if ($subject === null) {
+        if ($matches->isEmpty()) {
             throw new \RuntimeException(
                 "Обязательный предмет «{$name}» не найден. Создайте его в справочнике и отметьте галочкой «Обязательный (ЕНТ)».",
             );
         }
 
-        $subject->update([
+        $keeper = self::chooseKeeper($matches);
+
+        foreach ($matches->where('id', '!=', $keeper->id) as $duplicate) {
+            self::mergeDuplicateInto($keeper, $duplicate);
+        }
+
+        $keeper->update([
             'code' => $code,
             'name' => $name,
             'kind' => SubjectKind::Core,
             'is_system' => true,
         ]);
 
-        self::removeDuplicates($subject, $name);
-
-        return $subject->fresh();
+        return $keeper->fresh();
     }
 
     /**
@@ -83,15 +93,15 @@ final class CoreSubjects
     {
         $code = self::codeForName($subject->name);
 
+        if ($code !== null) {
+            return self::resolve($code);
+        }
+
         $subject->update([
             'kind' => SubjectKind::Core,
             'is_system' => true,
-            'code' => $code ?? $subject->code,
+            'code' => $subject->code,
         ]);
-
-        if ($code !== null) {
-            self::removeDuplicates($subject, self::CODES[$code]);
-        }
 
         return $subject->fresh();
     }
@@ -111,14 +121,49 @@ final class CoreSubjects
         return $subject->fresh();
     }
 
-    private static function removeDuplicates(Subject $keep, string $name): void
+    /**
+     * Основной — тот, где уже лежат вопросы (ваш оригинальный предмет).
+     * Пустой дубликат от сидера удаляется.
+     *
+     * @param  Collection<int, Subject>  $matches
+     */
+    private static function chooseKeeper(Collection $matches): Subject
     {
-        Subject::query()
-            ->where('name', $name)
-            ->where('id', '!=', $keep->id)
-            ->whereDoesntHave('questions')
-            ->whereDoesntHave('blueprintSections')
-            ->whereDoesntHave('directions')
-            ->delete();
+        return $matches
+            ->sortBy('id')
+            ->sortByDesc(fn (Subject $subject) => $subject->questions_count ?? $subject->questions()->count())
+            ->first();
+    }
+
+    private static function mergeDuplicateInto(Subject $keeper, Subject $duplicate): void
+    {
+        Question::query()
+            ->where('subject_id', $duplicate->id)
+            ->update(['subject_id' => $keeper->id]);
+
+        QuestionContext::query()
+            ->where('subject_id', $duplicate->id)
+            ->update(['subject_id' => $keeper->id]);
+
+        Group::query()
+            ->where('subject_id', $duplicate->id)
+            ->update(['subject_id' => $keeper->id]);
+
+        Exam::query()
+            ->where('subject_id', $duplicate->id)
+            ->update(['subject_id' => $keeper->id]);
+
+        ExamBlueprintSection::query()
+            ->where('subject_id', $duplicate->id)
+            ->update(['subject_id' => $keeper->id]);
+
+        $classIds = $duplicate->schoolClasses()->pluck('school_classes.id');
+
+        if ($classIds->isNotEmpty()) {
+            $keeper->schoolClasses()->syncWithoutDetaching($classIds->all());
+        }
+
+        $duplicate->schoolClasses()->detach();
+        $duplicate->delete();
     }
 }
