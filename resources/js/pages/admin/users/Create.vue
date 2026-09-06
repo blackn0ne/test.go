@@ -35,7 +35,7 @@ defineProps<{
 <template>
     <Head title="Добавить пользователя" />
 
-    <div class="flex h-full flex-1 flex-col gap-4 p-4 lg:p-6">
+    <div class="mx-auto flex h-full max-w-2xl flex-1 flex-col gap-4 p-4 lg:p-6">
         <Heading
             title="Добавить пользователя"
             description="ФИО, ИИН и телефон. Email создаётся автоматически."
@@ -43,7 +43,7 @@ defineProps<{
 
         <Form
             v-bind="UserController.store.form()"
-            class="w-full max-w-lg space-y-5"
+            class="w-full max-w-xl space-y-5"
             v-slot="{ errors, processing }"
         >
             <UserFormFields mode="create" :roles="roles" :errors="errors" />

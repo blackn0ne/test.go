@@ -45,7 +45,7 @@ const props = defineProps<{
 <template>
     <Head :title="`Изменить: ${user.name}`" />
 
-    <div class="flex h-full flex-1 flex-col gap-4 p-4 lg:p-6">
+    <div class="mx-auto flex h-full max-w-2xl flex-1 flex-col gap-4 p-4 lg:p-6">
         <Heading
             title="Изменить пользователя"
             :description="user.email"
@@ -53,7 +53,7 @@ const props = defineProps<{
 
         <Form
             v-bind="UserController.update.form(props.user.id)"
-            class="w-full max-w-lg space-y-5"
+            class="w-full max-w-xl space-y-5"
             v-slot="{ errors, processing }"
         >
             <UserFormFields
