@@ -3,11 +3,11 @@
 namespace App\Support;
 
 use App\Models\Exam;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonInterface;
 
 final class ExamPeriodFormatter
 {
-    public static function label(?Carbon $startsAt, ?Carbon $endsAt): string
+    public static function label(?CarbonInterface $startsAt, ?CarbonInterface $endsAt): string
     {
         if ($startsAt !== null && $endsAt !== null) {
             return $startsAt->translatedFormat('j F Y').' — '.$endsAt->translatedFormat('j F Y');
