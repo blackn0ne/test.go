@@ -35,7 +35,10 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
 
         if ($user) {
-            $user->loadMissing('direction:id,code,name');
+            $user->loadMissing([
+                'direction:id,code,name',
+                'school:id,name',
+            ]);
         }
 
         return [
@@ -49,6 +52,9 @@ class HandleInertiaRequests extends Middleware
                     'email' => $user->email,
                     'role' => $user->role->value,
                     'direction' => $user->direction?->only(['id', 'code', 'name']),
+                    'school' => $user->isSchool()
+                        ? $user->only(['id', 'name'])
+                        : $user->school?->only(['id', 'name']),
                     'must_select_direction' => $user->mustSelectDirection(),
                 ] : null,
             ],

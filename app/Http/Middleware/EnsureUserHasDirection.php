@@ -23,12 +23,6 @@ class EnsureUserHasDirection
             'direction.update',
             'logout',
             'dashboard',
-            'profile.edit',
-            'profile.update',
-            'profile.destroy',
-            'security.edit',
-            'user-password.update',
-            'appearance.edit',
         )) {
             return $next($request);
         }

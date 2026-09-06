@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Form, Link, router, usePage } from '@inertiajs/vue3';
-import { GraduationCap, LogOut, Settings } from '@lucide/vue';
-import { inject } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { Building2, GraduationCap, LogOut } from '@lucide/vue';
+import { computed, inject } from 'vue';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import UserInfo from '@/components/UserInfo.vue';
 import { logout } from '@/routes';
-import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 
 type Props = {
@@ -25,7 +24,9 @@ const openDirectionModal = inject<(() => void) | undefined>(
 );
 
 const page = usePage();
-const isAdmin = () => page.props.auth.user?.role === 'admin';
+const isAdmin = computed(() => page.props.auth.user?.role === 'admin');
+
+const schoolName = computed(() => page.props.auth.user?.school?.name ?? null);
 
 const handleLogout = () => {
     router.flushAll();
@@ -39,7 +40,7 @@ const handleLogout = () => {
         </div>
     </DropdownMenuLabel>
     <DropdownMenuSeparator />
-    <DropdownMenuGroup v-if="! isAdmin()">
+    <DropdownMenuGroup v-if="! isAdmin">
         <DropdownMenuItem
             class="cursor-pointer"
             @click="openDirectionModal?.()"
@@ -58,17 +59,23 @@ const handleLogout = () => {
                 </span>
             </span>
         </DropdownMenuItem>
-    </DropdownMenuGroup>
-    <DropdownMenuSeparator v-if="! isAdmin()" />
-    <DropdownMenuGroup>
-        <DropdownMenuItem :as-child="true">
-            <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
-                <Settings class="mr-2 h-4 w-4" />
-                Настройки
-            </Link>
+        <DropdownMenuItem class="cursor-default" @select.prevent>
+            <Building2 class="mr-2 h-4 w-4" />
+            <span class="flex flex-col items-start gap-0.5">
+                <span>Мектеп</span>
+                <span
+                    v-if="schoolName"
+                    class="text-xs text-muted-foreground"
+                >
+                    {{ schoolName }}
+                </span>
+                <span v-else class="text-xs text-muted-foreground">
+                    Не указано
+                </span>
+            </span>
         </DropdownMenuItem>
     </DropdownMenuGroup>
-    <DropdownMenuSeparator />
+    <DropdownMenuSeparator v-if="! isAdmin" />
     <DropdownMenuItem :as-child="true">
         <Link
             class="block w-full cursor-pointer"

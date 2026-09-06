@@ -6,6 +6,11 @@ export type UserDirection = {
     name: string;
 };
 
+export type UserSchool = {
+    id: number;
+    name: string;
+};
+
 export type User = {
     id: number;
     name: string;
@@ -13,6 +18,7 @@ export type User = {
     email: string;
     role: UserRole;
     direction: UserDirection | null;
+    school: UserSchool | null;
     must_select_direction: boolean;
     avatar?: string;
     email_verified_at: string | null;
