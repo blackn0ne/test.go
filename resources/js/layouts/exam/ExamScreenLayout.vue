@@ -17,6 +17,8 @@ type Props = {
     timer?: string | null;
     timerUrgent?: boolean;
     showTimer?: boolean;
+    showFinish?: boolean;
+    finishFormId?: string;
 };
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,6 +29,8 @@ const props = withDefaults(defineProps<Props>(), {
     timer: null,
     timerUrgent: false,
     showTimer: false,
+    showFinish: false,
+    finishFormId: 'exam-submit-form',
 });
 
 const emit = defineEmits<{
@@ -69,6 +73,8 @@ provide('openDirectionModal', () => {
                 :timer="props.timer"
                 :timer-urgent="props.timerUrgent"
                 :show-timer="props.showTimer"
+                :show-finish="props.showFinish"
+                :finish-form-id="props.finishFormId"
             />
             <slot />
         </AppContent>

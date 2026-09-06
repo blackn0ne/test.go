@@ -4,7 +4,6 @@ import {
     ArrowLeft,
     ArrowRight,
     FileText,
-    Flag,
     HelpCircle,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
@@ -171,6 +170,7 @@ function buildAnswersPayload(): Array<{
         :active-section="activeSection"
         interactive-sections
         show-timer
+        show-finish
         :timer="formatted"
         :timer-urgent="isUrgent"
         :header-title="props.exam.title"
@@ -179,10 +179,11 @@ function buildAnswersPayload(): Array<{
         <Head :title="props.exam.title" />
 
         <Form
+            id="exam-submit-form"
             v-bind="ExamAttemptController.submit.form(props.exam.id)"
             :transform="(data) => ({ ...data, answers: buildAnswersPayload() })"
             class="flex min-h-[calc(100dvh-4rem)] flex-1 flex-col bg-gradient-to-b from-muted/20 via-background to-background"
-            v-slot="{ errors, processing }"
+            v-slot="{ errors }"
         >
             <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 p-4 lg:p-6">
                 <ExamQuestionNavigator
@@ -257,7 +258,9 @@ function buildAnswersPayload(): Array<{
                                 />
                             </div>
 
-                            <div class="space-y-4">
+                            <div
+                                class="question-body text-base font-bold leading-relaxed [&_.rich-content]:font-bold [&_.rich-content_p]:font-bold [&_.rich-content_strong]:font-extrabold"
+                            >
                                 <RichContent :content="activeQuestion.body" />
                             </div>
 
@@ -292,46 +295,34 @@ function buildAnswersPayload(): Array<{
                         class="sticky bottom-0 z-10 -mx-4 border-t border-border/60 bg-background/85 px-4 py-4 backdrop-blur-md lg:-mx-6 lg:px-6"
                     >
                         <div
-                            class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3"
+                            class="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-3 sm:justify-start"
                         >
-                            <div class="flex gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    class="gap-2 rounded-full"
-                                    :disabled="activeQuestionIndex === 0"
-                                    @click="
-                                        selectQuestion(activeQuestionIndex - 1)
-                                    "
-                                >
-                                    <ArrowLeft class="size-4" />
-                                    Артқа
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    class="gap-2 rounded-full"
-                                    :disabled="
-                                        activeQuestionIndex >=
-                                        visibleQuestions.length - 1
-                                    "
-                                    @click="
-                                        selectQuestion(activeQuestionIndex + 1)
-                                    "
-                                >
-                                    Алға
-                                    <ArrowRight class="size-4" />
-                                </Button>
-                            </div>
-
                             <Button
-                                type="submit"
-                                size="lg"
-                                class="gap-2 rounded-full px-6 shadow-md shadow-primary/15"
-                                :disabled="processing"
+                                type="button"
+                                variant="outline"
+                                class="gap-2 rounded-full"
+                                :disabled="activeQuestionIndex === 0"
+                                @click="
+                                    selectQuestion(activeQuestionIndex - 1)
+                                "
                             >
-                                <Flag class="size-4" />
-                                Экзаменді аяқтау
+                                <ArrowLeft class="size-4" />
+                                Артқа
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                class="gap-2 rounded-full"
+                                :disabled="
+                                    activeQuestionIndex >=
+                                    visibleQuestions.length - 1
+                                "
+                                @click="
+                                    selectQuestion(activeQuestionIndex + 1)
+                                "
+                            >
+                                Алға
+                                <ArrowRight class="size-4" />
                             </Button>
                         </div>
                     </div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { Clock3, GraduationCap, Sparkles } from '@lucide/vue';
+import { Clock3, Flag, GraduationCap, Sparkles } from '@lucide/vue';
 import { computed, inject } from 'vue';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -12,6 +12,8 @@ type Props = {
     timer?: string | null;
     timerUrgent?: boolean;
     showTimer?: boolean;
+    showFinish?: boolean;
+    finishFormId?: string;
 };
 
 withDefaults(defineProps<Props>(), {
@@ -19,6 +21,8 @@ withDefaults(defineProps<Props>(), {
     timer: null,
     timerUrgent: false,
     showTimer: false,
+    showFinish: false,
+    finishFormId: 'exam-submit-form',
 });
 
 const page = usePage();
@@ -47,23 +51,37 @@ const openDirectionModal = inject<(() => void) | undefined>(
             </h1>
         </div>
 
-        <div
-            v-if="showTimer && timer"
-            class="flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold tabular-nums shadow-sm"
-            :class="
-                cn(
-                    timerUrgent
-                        ? 'border border-destructive/30 bg-destructive/10 text-destructive'
-                        : 'border border-border/70 bg-muted/50 text-foreground',
-                )
-            "
-            data-test="exam-timer"
-        >
-            <Clock3
-                class="size-4 shrink-0"
-                :class="timerUrgent ? 'animate-pulse' : ''"
-            />
-            <span>{{ timer }}</span>
+        <div v-if="showTimer && timer" class="flex items-center gap-2">
+            <div
+                class="flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold tabular-nums shadow-sm"
+                :class="
+                    cn(
+                        timerUrgent
+                            ? 'border-orange-500/50 bg-orange-500/15 text-orange-700 dark:text-orange-300'
+                            : 'border-amber-400/60 bg-amber-400/15 text-amber-800 dark:text-amber-200',
+                    )
+                "
+                data-test="exam-timer"
+            >
+                <Clock3
+                    class="size-4 shrink-0"
+                    :class="timerUrgent ? 'animate-pulse text-orange-600' : 'text-amber-600'"
+                />
+                <span>{{ timer }}</span>
+            </div>
+
+            <Button
+                v-if="showFinish"
+                type="submit"
+                :form="finishFormId"
+                variant="destructive"
+                size="sm"
+                class="gap-1.5 rounded-full px-3 shadow-sm"
+                data-test="exam-finish-button"
+            >
+                <Flag class="size-4" />
+                <span class="hidden sm:inline">Аяқтау</span>
+            </Button>
         </div>
 
         <Button

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BookOpen, CheckCircle2 } from '@lucide/vue';
+import { BookOpen } from '@lucide/vue';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -37,8 +37,8 @@ function slotClass(index: number, questionId: number): string {
     return cn(
         'relative flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold transition-all duration-200',
         answered && ! active && 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/25',
-        answered && active && 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-300 ring-offset-2 ring-offset-background',
-        ! answered && active && 'bg-primary text-primary-foreground shadow-md shadow-primary/20 ring-2 ring-primary/30 ring-offset-2 ring-offset-background',
+        answered && active && 'bg-emerald-600 text-white shadow-[0_0_0_2px_var(--background),0_0_0_3px_rgb(16,185,129)]',
+        ! answered && active && 'bg-primary text-primary-foreground shadow-[0_0_0_2px_var(--background),0_0_0_3px_hsl(var(--primary))]',
         ! answered && ! active && 'border border-border/80 bg-background text-foreground hover:border-primary/30 hover:bg-primary/5',
     );
 }
@@ -46,7 +46,7 @@ function slotClass(index: number, questionId: number): string {
 
 <template>
     <div
-        class="overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-muted/30 via-background to-primary/5 shadow-sm"
+        class="rounded-2xl border border-border/60 bg-gradient-to-br from-muted/30 via-background to-primary/5 shadow-sm"
     >
         <div class="flex flex-wrap items-start justify-between gap-3 border-b border-border/50 px-4 py-3">
             <div class="flex items-center gap-3">
@@ -88,11 +88,9 @@ function slotClass(index: number, questionId: number): string {
                 </span>
             </div>
 
-            <div
-                class="relative -mx-1"
-            >
+            <div class="relative px-1 py-1.5">
                 <div
-                    class="flex gap-2 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
+                    class="flex gap-2 overflow-x-auto overflow-y-visible px-1 py-1 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
                 >
                     <button
                         v-for="(question, index) in questions"
@@ -103,10 +101,6 @@ function slotClass(index: number, questionId: number): string {
                         :aria-current="activeIndex === index ? 'true' : undefined"
                         @click="emit('select', index)"
                     >
-                        <CheckCircle2
-                            v-if="isAnswered(question.id) && activeIndex !== index"
-                            class="absolute -top-1 -right-1 size-3.5 rounded-full bg-background text-emerald-500"
-                        />
                         {{ index + 1 }}
                     </button>
                 </div>
@@ -125,7 +119,7 @@ function slotClass(index: number, questionId: number): string {
                 </span>
                 <span class="inline-flex items-center gap-1.5">
                     <span
-                        class="size-2.5 rounded-md bg-primary ring-2 ring-primary/30 ring-offset-1 ring-offset-background"
+                        class="size-2.5 rounded-md bg-primary shadow-[0_0_0_2px_var(--background),0_0_0_3px_hsl(var(--primary))]"
                     />
                     Ағымдағы
                 </span>
