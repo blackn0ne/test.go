@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\UserRole;
+use App\Models\Direction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -75,6 +76,13 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role' => UserRole::School,
+        ]);
+    }
+
+    public function withDirection(Direction $direction): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'direction_id' => $direction->id,
         ]);
     }
 }

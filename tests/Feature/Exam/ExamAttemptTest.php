@@ -3,6 +3,7 @@
 use App\Enums\ExamAttemptStatus;
 use App\Enums\ExamStatus;
 use App\Enums\QuestionType;
+use App\Models\Direction;
 use App\Models\Exam;
 use App\Models\ExamQuestion;
 use App\Models\Question;
@@ -53,9 +54,19 @@ function createPublishedExamWithQuestion(): Exam
     return $exam->fresh(['examQuestions']);
 }
 
+function createStudentWithDirection(): User
+{
+    $direction = Direction::query()->create([
+        'code' => 'FIZ-MAT',
+        'name' => 'Физика + Математика',
+    ]);
+
+    return User::factory()->withDirection($direction)->create();
+}
+
 test('exam taking response never exposes is_correct', function () {
     $exam = createPublishedExamWithQuestion();
-    $student = User::factory()->create();
+    $student = createStudentWithDirection();
 
     $this->actingAs($student)
         ->get(route('exams.take', $exam))

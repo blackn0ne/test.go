@@ -6,33 +6,49 @@ import type { User } from '@/types';
 
 type Props = {
     user: User;
+    showIin?: boolean;
     showEmail?: boolean;
 };
 
 const props = withDefaults(defineProps<Props>(), {
+    showIin: true,
     showEmail: false,
 });
 
 const { getInitials } = useInitials();
 
-// Compute whether we should show the avatar image
 const showAvatar = computed(
     () => props.user.avatar && props.user.avatar !== '',
 );
+
+const secondaryLine = computed(() => {
+    if (props.showIin && props.user.iin) {
+        return props.user.iin;
+    }
+
+    if (props.showEmail) {
+        return props.user.email;
+    }
+
+    return null;
+});
 </script>
 
 <template>
-    <Avatar class="h-8 w-8 overflow-hidden rounded-lg">
+    <Avatar class="h-8 w-8 shrink-0 overflow-hidden rounded-lg">
         <AvatarImage v-if="showAvatar" :src="user.avatar!" :alt="user.name" />
         <AvatarFallback class="rounded-lg text-black dark:text-white">
             {{ getInitials(user.name) }}
         </AvatarFallback>
     </Avatar>
 
-    <div class="grid flex-1 text-left text-sm leading-tight">
+    <div class="grid min-w-0 flex-1 text-left text-sm leading-tight">
         <span class="truncate font-medium">{{ user.name }}</span>
-        <span v-if="showEmail" class="truncate text-xs text-muted-foreground">{{
-            user.email
-        }}</span>
+        <span
+            v-if="secondaryLine"
+            class="truncate text-xs text-muted-foreground"
+        >
+            {{ secondaryLine }}
+        </span>
     </div>
 </template>

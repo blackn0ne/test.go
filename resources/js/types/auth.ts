@@ -1,10 +1,19 @@
 export type UserRole = 'user' | 'admin' | 'school';
 
+export type UserDirection = {
+    id: number;
+    code: string;
+    name: string;
+};
+
 export type User = {
     id: number;
     name: string;
+    iin: string | null;
     email: string;
     role: UserRole;
+    direction: UserDirection | null;
+    must_select_direction: boolean;
     avatar?: string;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
@@ -13,8 +22,15 @@ export type User = {
     [key: string]: unknown;
 };
 
+export type DirectionOption = {
+    id: number;
+    code: string;
+    name: string;
+    subjects: Array<{ id: number; name: string }>;
+};
+
 export type Auth = {
-    user: User;
+    user: User | null;
 };
 
 /* @chisel-passkeys */

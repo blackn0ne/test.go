@@ -15,9 +15,10 @@ import {
 } from '@/components/ui/sidebar';
 import UserInfo from '@/components/UserInfo.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
+import type { User } from '@/types';
 
 const page = usePage();
-const user = computed(() => page.props.auth.user);
+const user = computed(() => page.props.auth.user as User);
 const { isMobile, state } = useSidebar();
 </script>
 
@@ -31,8 +32,10 @@ const { isMobile, state } = useSidebar();
                         class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                         data-test="sidebar-menu-button"
                     >
-                        <UserInfo :user="user" />
-                        <ChevronsUpDown class="ml-auto size-4" />
+                        <UserInfo :user="user" :show-iin="true" />
+                        <ChevronsUpDown
+                            class="ml-auto size-4 shrink-0 text-muted-foreground"
+                        />
                     </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent

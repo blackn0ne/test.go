@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AdminAuthenticatedSessionController;
 use App\Http\Controllers\ExamAttemptController;
+use App\Http\Controllers\UserDirectionController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -14,14 +15,20 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::put('direction', [UserDirectionController::class, 'update'])
+        ->name('direction.update');
 
-    Route::get('exams/{exam}/take', [ExamAttemptController::class, 'show'])
-        ->name('exams.take');
-    Route::post('exams/{exam}/submit', [ExamAttemptController::class, 'submit'])
-        ->name('exams.submit');
-    Route::get('exams/{exam}/attempts/{attempt}', [ExamAttemptController::class, 'result'])
-        ->name('exams.result');
+    Route::inertia('dashboard', 'Dashboard')
+        ->name('dashboard');
+
+    Route::middleware('direction')->group(function () {
+        Route::get('exams/{exam}/take', [ExamAttemptController::class, 'show'])
+            ->name('exams.take');
+        Route::post('exams/{exam}/submit', [ExamAttemptController::class, 'submit'])
+            ->name('exams.submit');
+        Route::get('exams/{exam}/attempts/{attempt}', [ExamAttemptController::class, 'result'])
+            ->name('exams.result');
+    });
 });
 
 require __DIR__.'/admin.php';

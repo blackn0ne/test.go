@@ -8,6 +8,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -24,6 +25,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property UserRole $role
+ * @property int|null $direction_id
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -31,7 +33,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'iin', 'phone', 'email', 'password', 'role'])]
+#[Fillable(['name', 'iin', 'phone', 'email', 'password', 'role', 'direction_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -66,5 +68,18 @@ class User extends Authenticatable implements PasskeyUser
     public function isStudent(): bool
     {
         return $this->role === UserRole::User;
+    }
+
+    /**
+     * @return BelongsTo<Direction, $this>
+     */
+    public function direction(): BelongsTo
+    {
+        return $this->belongsTo(Direction::class);
+    }
+
+    public function mustSelectDirection(): bool
+    {
+        return ! $this->isAdmin() && $this->direction_id === null;
     }
 }

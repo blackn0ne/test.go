@@ -18,6 +18,7 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            directions: import('@/types/auth').DirectionOption[];
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Link, router } from '@inertiajs/vue3';
-import { LogOut, Settings } from '@lucide/vue';
+import { Form, Link, router, usePage } from '@inertiajs/vue3';
+import { GraduationCap, LogOut, Settings } from '@lucide/vue';
+import { inject } from 'vue';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -16,25 +17,54 @@ type Props = {
     user: User;
 };
 
+defineProps<Props>();
+
+const openDirectionModal = inject<(() => void) | undefined>(
+    'openDirectionModal',
+    undefined,
+);
+
+const page = usePage();
+const isAdmin = () => page.props.auth.user?.role === 'admin';
+
 const handleLogout = () => {
     router.flushAll();
 };
-
-defineProps<Props>();
 </script>
 
 <template>
     <DropdownMenuLabel class="p-0 font-normal">
         <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <UserInfo :user="user" :show-email="true" />
+            <UserInfo :user="user" :show-iin="true" :show-email="false" />
         </div>
     </DropdownMenuLabel>
     <DropdownMenuSeparator />
+    <DropdownMenuGroup v-if="! isAdmin()">
+        <DropdownMenuItem
+            class="cursor-pointer"
+            @click="openDirectionModal?.()"
+        >
+            <GraduationCap class="mr-2 h-4 w-4" />
+            <span class="flex flex-col items-start gap-0.5">
+                <span>Направление</span>
+                <span
+                    v-if="user.direction"
+                    class="text-xs text-muted-foreground"
+                >
+                    {{ user.direction.code }} — {{ user.direction.name }}
+                </span>
+                <span v-else class="text-xs text-destructive">
+                    Не выбрано
+                </span>
+            </span>
+        </DropdownMenuItem>
+    </DropdownMenuGroup>
+    <DropdownMenuSeparator v-if="! isAdmin()" />
     <DropdownMenuGroup>
         <DropdownMenuItem :as-child="true">
             <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
                 <Settings class="mr-2 h-4 w-4" />
-                Settings
+                Настройки
             </Link>
         </DropdownMenuItem>
     </DropdownMenuGroup>
@@ -48,7 +78,7 @@ defineProps<Props>();
             data-test="logout-button"
         >
             <LogOut class="mr-2 h-4 w-4" />
-            Log out
+            Выйти
         </Link>
     </DropdownMenuItem>
 </template>
