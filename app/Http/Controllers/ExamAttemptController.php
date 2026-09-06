@@ -8,6 +8,7 @@ use App\Http\Resources\Exam\ExamAttemptQuestionResource;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Services\Exams\ExamAttemptService;
+use App\Support\ExamSectionCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,24 +30,20 @@ class ExamAttemptController extends Controller
         $attempt = $this->attempts->findAttempt($exam, $user);
 
         if ($attempt === null) {
-            return Inertia::render('exams/Take', [
-                'exam' => $this->examPayload($exam),
-                'attempt' => null,
-                'questions' => [],
-                'requiresPromoCode' => $user->isStudent(),
-            ]);
+            return redirect()->route('exam.show');
         }
 
         if ($attempt->status->value === 'submitted') {
             abort(403, 'Вы уже завершили этот экзамен.');
         }
 
+        $questions = $attempt->snapshotQuestions;
+
         return Inertia::render('exams/Take', [
             'exam' => $this->examPayload($exam),
             'attempt' => $this->attemptPayload($attempt),
-            'questions' => ExamAttemptQuestionResource::collection(
-                $attempt->snapshotQuestions,
-            )->resolve(),
+            'questions' => ExamAttemptQuestionResource::collection($questions)->resolve(),
+            'sections' => ExamSectionCatalog::fromAttemptQuestions($questions),
             'requiresPromoCode' => false,
         ]);
     }
@@ -118,12 +115,18 @@ class ExamAttemptController extends Controller
      */
     private function examPayload(Exam $exam): array
     {
+        $startsAt = $exam->starts_at;
+
         return [
             'id' => $exam->id,
             'title' => $exam->title,
             'description' => $exam->description,
             'duration_minutes' => $exam->duration_minutes,
+            'starts_at' => $startsAt,
             'ends_at' => $exam->ends_at,
+            'period_label' => $startsAt !== null
+                ? mb_convert_case($startsAt->translatedFormat('F'), MB_CASE_TITLE).' '.$startsAt->year
+                : null,
         ];
     }
 

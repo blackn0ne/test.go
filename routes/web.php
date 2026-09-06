@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AdminAuthenticatedSessionController;
 use App\Http\Controllers\ExamAttemptController;
+use App\Http\Controllers\StudentExamController;
 use App\Http\Controllers\UserDirectionController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +23,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('dashboard');
 
     Route::middleware('direction')->group(function () {
+        Route::get('exam', [StudentExamController::class, 'show'])
+            ->name('exam.show');
+
         Route::get('exams/{exam}/take', [ExamAttemptController::class, 'show'])
             ->name('exams.take');
         Route::post('exams/{exam}/start', [ExamAttemptController::class, 'start'])
