@@ -32,16 +32,21 @@ test('admin can create users', function () {
 
     $this->actingAs($admin)
         ->post(route('admin.users.store'), [
-            'name' => 'School Admin',
-            'email' => 'school@example.com',
+            'name' => 'Иванов Иван Иванович',
+            'iin' => '123456789012',
+            'phone' => '77001234567',
             'password' => 'password',
             'password_confirmation' => 'password',
             'role' => UserRole::School->value,
         ])
         ->assertRedirect(route('admin.users.index'));
 
-    expect(User::query()->where('email', 'school@example.com')->first())
-        ->role->toBe(UserRole::School);
+    $user = User::query()->where('iin', '123456789012')->first();
+
+    expect($user)->not->toBeNull()
+        ->and($user->role)->toBe(UserRole::School)
+        ->and($user->phone)->toBe('77001234567')
+        ->and($user->email)->toBe('77001234567@gotest.kz');
 });
 
 test('admin can update site settings', function () {

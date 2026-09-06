@@ -22,15 +22,7 @@ class UserController extends Controller
         return Inertia::render('admin/users/Index', [
             'users' => User::query()
                 ->orderBy('name')
-                ->get(['id', 'name', 'email', 'role', 'created_at']),
-            'roles' => collect(UserRole::cases())->map(fn (UserRole $role) => [
-                'value' => $role->value,
-                'label' => match ($role) {
-                    UserRole::Admin => 'Админ',
-                    UserRole::School => 'Школа',
-                    UserRole::User => 'Студент',
-                },
-            ]),
+                ->get(['id', 'name', 'iin', 'phone', 'email', 'role', 'created_at']),
         ]);
     }
 
@@ -65,7 +57,7 @@ class UserController extends Controller
     public function edit(User $user): Response
     {
         return Inertia::render('admin/users/Edit', [
-            'user' => $user->only(['id', 'name', 'email', 'role']),
+            'user' => $user->only(['id', 'name', 'iin', 'phone', 'email', 'role']),
             'roles' => $this->roleOptions(),
         ]);
     }
