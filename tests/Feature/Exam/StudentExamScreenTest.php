@@ -114,6 +114,28 @@ test('student with in progress attempt is redirected from lobby to take page', f
         ->assertRedirect(route('exams.take', $exam));
 });
 
+test('student lobby shows draft exam name and period', function () {
+    ['exam' => $exam, 'student' => $student] = createStudentExamFixtures();
+
+    $exam->update([
+        'status' => ExamStatus::Draft,
+        'title' => 'БАЙҚАУ СЫНАҒЫ',
+        'starts_at' => '2026-09-01 00:00:00',
+        'ends_at' => '2027-05-01 00:00:00',
+    ]);
+
+    $this->actingAs($student)
+        ->get(route('exam.show'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('exam/Show')
+            ->where('lobby.title', 'БАЙҚАУ СЫНАҒЫ')
+            ->where('lobby.available', false)
+            ->where('exam', null)
+            ->where('lobby.status_label', 'Черновик')
+        );
+});
+
 test('student exam lobby shows waiting state when no published exam', function () {
     ['student' => $student] = createStudentExamFixtures();
 

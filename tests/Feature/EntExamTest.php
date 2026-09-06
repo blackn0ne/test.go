@@ -145,6 +145,51 @@ test('admin can create generated ent exam', function () {
         ->and($exam->examQuestions)->toHaveCount(0);
 });
 
+test('admin can edit and delete exam', function () {
+    seedExistingCoreSubjects();
+    $this->seed(EntSystemSeeder::class);
+
+    $admin = User::factory()->admin()->create();
+    $direction = Direction::query()->create(['code' => 'DG', 'name' => 'ДЖТ-ГЕО']);
+    $blueprint = ExamBlueprint::query()->where('is_default', true)->firstOrFail();
+
+    $this->actingAs($admin)
+        ->post(route('admin.exams.store'), [
+            'title' => 'ЕНТ тест',
+            'generation_mode' => ExamGenerationMode::Generated->value,
+            'direction_id' => $direction->id,
+            'exam_blueprint_id' => $blueprint->id,
+            'status' => ExamStatus::Draft->value,
+            'duration_minutes' => 240,
+        ])
+        ->assertRedirect(route('admin.exams.index'));
+
+    $exam = Exam::query()->where('title', 'ЕНТ тест')->firstOrFail();
+
+    $this->actingAs($admin)
+        ->put(route('admin.exams.update', $exam), [
+            'title' => 'БАЙҚАУ СЫНАҒЫ',
+            'generation_mode' => ExamGenerationMode::Generated->value,
+            'direction_id' => $direction->id,
+            'exam_blueprint_id' => $blueprint->id,
+            'status' => ExamStatus::Published->value,
+            'duration_minutes' => 240,
+            'starts_at' => '2026-09-01 00:00:00',
+            'ends_at' => '2027-05-01 00:00:00',
+        ])
+        ->assertRedirect(route('admin.exams.index'));
+
+    expect($exam->fresh())
+        ->title->toBe('БАЙҚАУ СЫНАҒЫ')
+        ->status->toBe(ExamStatus::Published);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.exams.destroy', $exam))
+        ->assertRedirect(route('admin.exams.index'));
+
+    expect(Exam::query()->find($exam->id))->toBeNull();
+});
+
 test('admin can mark subject as core via checkbox', function () {
     $admin = User::factory()->admin()->create();
     $schoolClass = SchoolClass::factory()->create();

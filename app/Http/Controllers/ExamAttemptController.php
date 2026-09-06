@@ -8,6 +8,7 @@ use App\Http\Resources\Exam\ExamAttemptQuestionResource;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Services\Exams\ExamAttemptService;
+use App\Support\ExamPeriodFormatter;
 use App\Support\ExamSectionCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -124,9 +125,7 @@ class ExamAttemptController extends Controller
             'duration_minutes' => $exam->duration_minutes,
             'starts_at' => $startsAt,
             'ends_at' => $exam->ends_at,
-            'period_label' => $startsAt !== null
-                ? mb_convert_case($startsAt->translatedFormat('F'), MB_CASE_TITLE).' '.$startsAt->year
-                : null,
+            'period_label' => ExamPeriodFormatter::forExam($exam),
         ];
     }
 

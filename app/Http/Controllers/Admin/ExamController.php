@@ -6,6 +6,7 @@ use App\Enums\ExamGenerationMode;
 use App\Enums\ExamStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreExamRequest;
+use App\Http\Requests\Admin\UpdateExamRequest;
 use App\Models\Direction;
 use App\Models\Exam;
 use App\Models\ExamBlueprint;
@@ -95,6 +96,64 @@ class ExamController extends Controller
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Exam created.')]);
+
+        return to_route('admin.exams.index');
+    }
+
+    public function edit(Exam $exam): Response
+    {
+        return Inertia::render('admin/exams/Edit', [
+            'exam' => [
+                'id' => $exam->id,
+                'title' => $exam->title,
+                'description' => $exam->description,
+                'status' => $exam->status->value,
+                'generation_mode' => $exam->generation_mode->value,
+                'direction_id' => $exam->direction_id,
+                'exam_blueprint_id' => $exam->exam_blueprint_id,
+                'duration_minutes' => $exam->duration_minutes,
+                'starts_at' => $exam->starts_at?->format('Y-m-d\TH:i'),
+                'ends_at' => $exam->ends_at?->format('Y-m-d\TH:i'),
+            ],
+            'directions' => Direction::query()
+                ->with(['subjects:id,name'])
+                ->orderBy('code')
+                ->get(['id', 'code', 'name']),
+            'blueprints' => ExamBlueprint::query()
+                ->orderByDesc('is_default')
+                ->orderBy('name')
+                ->get(['id', 'name', 'total_questions', 'is_default']),
+            'statuses' => collect(ExamStatus::cases())->map(fn (ExamStatus $status) => [
+                'value' => $status->value,
+                'label' => $status->label(),
+            ])->values(),
+        ]);
+    }
+
+    public function update(UpdateExamRequest $request, Exam $exam): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        $exam->update([
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'status' => $validated['status'],
+            'direction_id' => $validated['direction_id'] ?? null,
+            'duration_minutes' => $validated['duration_minutes'] ?? $exam->duration_minutes,
+            'starts_at' => $validated['starts_at'] ?? null,
+            'ends_at' => $validated['ends_at'] ?? null,
+        ]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Exam updated.')]);
+
+        return to_route('admin.exams.index');
+    }
+
+    public function destroy(Exam $exam): RedirectResponse
+    {
+        $exam->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Exam deleted.')]);
 
         return to_route('admin.exams.index');
     }

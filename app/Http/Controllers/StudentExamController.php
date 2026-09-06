@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Exam;
 use App\Support\AvailableExamResolver;
+use App\Support\ExamPeriodFormatter;
 use App\Support\ExamSectionCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,8 +18,9 @@ class StudentExamController extends Controller
         $user = $request->user();
         abort_unless($user->isStudent(), 403);
 
+        $lobbyExam = AvailableExamResolver::forLobby($user);
         $exam = AvailableExamResolver::forUser($user);
-        $attempt = AvailableExamResolver::inProgressAttempt($user, $exam);
+        $attempt = AvailableExamResolver::inProgressAttempt($user, $exam ?? $lobbyExam);
 
         if ($exam !== null && $attempt !== null) {
             return to_route('exams.take', $exam);
@@ -29,11 +31,12 @@ class StudentExamController extends Controller
             'sections' => ExamSectionCatalog::forUser($user),
             'requiresPromoCode' => true,
             'lobby' => [
-                'title' => $exam?->title ?? 'ЕНТ',
-                'period_label' => $exam !== null && $exam->starts_at !== null
-                    ? mb_convert_case($exam->starts_at->translatedFormat('F'), MB_CASE_TITLE).' '.$exam->starts_at->year
-                    : mb_convert_case(now()->translatedFormat('F'), MB_CASE_TITLE).' '.now()->year,
+                'title' => $lobbyExam?->title ?? 'ЕНТ',
+                'period_label' => $lobbyExam !== null
+                    ? ExamPeriodFormatter::forExam($lobbyExam)
+                    : ExamPeriodFormatter::label(now(), null),
                 'available' => $exam !== null,
+                'status_label' => $lobbyExam?->status->label(),
             ],
         ]);
     }
@@ -43,18 +46,14 @@ class StudentExamController extends Controller
      */
     private function examPayload(Exam $exam): array
     {
-        $startsAt = $exam->starts_at;
-
         return [
             'id' => $exam->id,
             'title' => $exam->title,
             'description' => $exam->description,
             'duration_minutes' => $exam->duration_minutes,
-            'starts_at' => $startsAt,
+            'starts_at' => $exam->starts_at,
             'ends_at' => $exam->ends_at,
-            'period_label' => $startsAt !== null
-                ? mb_convert_case($startsAt->translatedFormat('F'), MB_CASE_TITLE).' '.$startsAt->year
-                : null,
+            'period_label' => ExamPeriodFormatter::forExam($exam),
         ];
     }
 }

@@ -20,7 +20,7 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::post('editor-uploads', [EditorUploadController::class, 'store'])
             ->name('editor-uploads.store');
 
-        Route::resource('exams', ExamController::class)->only(['index', 'create', 'store']);
+        Route::resource('exams', ExamController::class)->except(['show']);
         Route::get('promo-codes', [PromoCodeController::class, 'index'])->name('promo-codes.index');
         Route::get('promo-codes/create', [PromoCodeController::class, 'create'])->name('promo-codes.create');
         Route::post('promo-codes', [PromoCodeController::class, 'store'])->name('promo-codes.store');

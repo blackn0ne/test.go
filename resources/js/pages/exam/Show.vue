@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { Clock, Play, Sparkles } from '@lucide/vue';
+import { Clock, Play } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PromoCodeModal from '@/components/exam/PromoCodeModal.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import ExamScreenLayout from '@/layouts/exam/ExamScreenLayout.vue';
 import type { ExamInfo, ExamSection } from '@/types/exam';
@@ -15,6 +16,7 @@ type LobbyInfo = {
     title: string;
     period_label: string;
     available: boolean;
+    status_label?: string | null;
 };
 
 const props = defineProps<{
@@ -33,83 +35,88 @@ const canStart = computed(() => props.lobby.available && props.exam !== null);
 <template>
     <ExamScreenLayout
         :sections="props.sections"
-        header-title="ЕНТ"
+        :header-title="props.lobby.title"
     >
-        <Head title="ЕНТ" />
+        <Head :title="props.lobby.title" />
 
-        <div class="flex flex-1 flex-col p-4 lg:p-8">
-            <div class="flex flex-1 items-center justify-center">
-                <div
-                    class="relative w-full max-w-2xl overflow-hidden rounded-3xl border bg-card p-8 shadow-sm md:p-12"
+        <div
+            class="relative flex min-h-[calc(100dvh-4rem)] flex-1 flex-col overflow-hidden"
+        >
+            <div
+                class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(0,0,0,0.04),transparent_55%),radial-gradient(circle_at_bottom_right,rgba(0,0,0,0.03),transparent_45%)] dark:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_55%)]"
+            />
+            <div
+                class="pointer-events-none absolute top-1/4 left-1/2 size-[28rem] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl"
+            />
+
+            <div
+                class="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-16 text-center md:px-12"
+            >
+                <p
+                    class="animate-in fade-in text-xs font-medium tracking-[0.24em] text-muted-foreground uppercase duration-700"
                 >
-                    <div
-                        class="pointer-events-none absolute inset-0 opacity-60"
+                    Единое национальное тестирование
+                </p>
+
+                <h1
+                    class="animate-in fade-in slide-in-from-bottom-4 mt-6 max-w-4xl text-4xl font-semibold tracking-tight duration-700 md:text-6xl md:leading-[1.05]"
+                >
+                    {{ props.lobby.title }}
+                </h1>
+
+                <p
+                    class="animate-in fade-in slide-in-from-bottom-2 mt-5 text-lg text-muted-foreground duration-700 [animation-delay:120ms] md:text-xl"
+                >
+                    {{ props.lobby.period_label }}
+                </p>
+
+                <div
+                    class="animate-in fade-in mt-6 flex flex-wrap items-center justify-center gap-2 duration-700 [animation-delay:220ms]"
+                >
+                    <Badge v-if="! canStart" variant="secondary">
+                        {{ props.lobby.status_label ?? 'Ожидание' }}
+                    </Badge>
+                    <Badge v-else variant="default">Доступен</Badge>
+                </div>
+
+                <p
+                    v-if="canStart && props.exam?.description"
+                    class="animate-in fade-in mx-auto mt-6 max-w-2xl text-sm leading-6 text-muted-foreground duration-700 [animation-delay:320ms] md:text-base"
+                >
+                    {{ props.exam.description }}
+                </p>
+                <p
+                    v-else-if="! canStart"
+                    class="animate-in fade-in mx-auto mt-6 max-w-2xl text-sm leading-6 text-muted-foreground duration-700 [animation-delay:320ms] md:text-base"
+                >
+                    Экзамен создан, но ещё не открыт для студентов. Измените
+                    статус на «Опубликован» в админке и убедитесь, что дата
+                    начала уже наступила.
+                </p>
+
+                <div
+                    class="animate-in fade-in zoom-in-95 mt-10 duration-700 [animation-delay:420ms]"
+                >
+                    <Button
+                        v-if="canStart"
+                        size="lg"
+                        class="h-12 min-w-48 gap-2 rounded-full px-8 text-base"
+                        data-test="exam-start-button"
+                        @click="promoModalOpen = true"
                     >
-                        <div
-                            class="absolute -top-24 -right-24 size-64 animate-pulse rounded-full bg-primary/10 blur-3xl"
-                        />
-                        <div
-                            class="absolute -bottom-24 -left-24 size-64 animate-pulse rounded-full bg-primary/5 blur-3xl [animation-delay:700ms]"
-                        />
-                    </div>
-
-                    <div
-                        class="relative flex flex-col items-center gap-6 text-center"
+                        <Play class="size-4" />
+                        Начать
+                    </Button>
+                    <Button
+                        v-else
+                        size="lg"
+                        variant="secondary"
+                        class="h-12 min-w-48 gap-2 rounded-full px-8 text-base"
+                        disabled
                     >
-                        <div
-                            class="inline-flex items-center gap-2 rounded-full border bg-background/80 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur"
-                        >
-                            <Sparkles class="size-3.5 text-primary" />
-                            <span>Единое национальное тестирование</span>
-                        </div>
-
-                        <div class="space-y-3">
-                            <h2
-                                class="animate-in fade-in slide-in-from-bottom-4 text-3xl font-bold tracking-tight duration-700 md:text-4xl"
-                            >
-                                {{ props.lobby.title }}
-                            </h2>
-                            <p
-                                class="animate-in fade-in slide-in-from-bottom-2 text-lg text-muted-foreground duration-700 [animation-delay:150ms]"
-                            >
-                                {{ props.lobby.period_label }}
-                            </p>
-                            <p
-                                v-if="canStart && props.exam?.description"
-                                class="animate-in fade-in mx-auto max-w-lg text-sm text-muted-foreground duration-700 [animation-delay:300ms]"
-                            >
-                                {{ props.exam.description }}
-                            </p>
-                            <p
-                                v-else-if="! canStart"
-                                class="animate-in fade-in mx-auto max-w-lg text-sm text-muted-foreground duration-700 [animation-delay:300ms]"
-                            >
-                                Экзамен для вашего направления ещё не
-                                опубликован. Когда администратор откроет доступ,
-                                кнопка «Начать» станет активной.
-                            </p>
-                        </div>
-
-                        <Button
-                            v-if="canStart"
-                            size="lg"
-                            class="animate-in fade-in zoom-in-95 min-w-44 gap-2 duration-700 [animation-delay:450ms]"
-                            data-test="exam-start-button"
-                            @click="promoModalOpen = true"
-                        >
-                            <Play class="size-4" />
-                            Начать
-                        </Button>
-                        <Button
-                            v-else
-                            size="lg"
-                            class="animate-in fade-in zoom-in-95 min-w-44 gap-2 duration-700 [animation-delay:450ms]"
-                            disabled
-                        >
-                            <Clock class="size-4" />
-                            Ожидание
-                        </Button>
-                    </div>
+                        <Clock class="size-4" />
+                        Ожидание
+                    </Button>
                 </div>
             </div>
         </div>
