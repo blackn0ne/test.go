@@ -166,6 +166,54 @@ test('student cannot submit twice', function () {
     ]))->toThrow(ValidationException::class);
 });
 
+test('student can start a new attempt on the same exam with another promo code', function () {
+    $exam = createPublishedExamWithQuestion();
+    $student = createStudentWithDirection();
+    $admin = User::factory()->admin()->create();
+    $service = app(ExamAttemptService::class);
+
+    $firstPromo = createPromoCodeForStudent($student, $exam, $admin, 'AAA11');
+
+    $batch = PromoCodeBatch::query()->create([
+        'school_id' => $student->school_id,
+        'year' => (int) $exam->starts_at?->year,
+        'month' => (int) $exam->starts_at?->month,
+        'coupons_per_student' => 2,
+        'students_count' => 1,
+        'total_codes' => 2,
+        'created_by' => $admin->id,
+    ]);
+
+    $secondPromo = PromoCode::query()->create([
+        'promo_code_batch_id' => $batch->id,
+        'school_id' => $student->school_id,
+        'year' => (int) $exam->starts_at?->year,
+        'month' => (int) $exam->starts_at?->month,
+        'code' => 'BBB22',
+    ]);
+
+    $firstAttempt = $service->startOrResume($exam, $student, $firstPromo->code);
+    $snapshotQuestion = $firstAttempt->snapshotQuestions->first();
+    $option = $snapshotQuestion->options->first();
+
+    $service->submit($firstAttempt, [
+        [
+            'exam_attempt_question_id' => $snapshotQuestion->id,
+            'selected_option_ids' => [$option->id],
+        ],
+    ]);
+
+    $secondAttempt = $service->startOrResume($exam, $student, $secondPromo->code);
+
+    expect($secondAttempt->id)->not->toBe($firstAttempt->id)
+        ->and($secondAttempt->status)->toBe(ExamAttemptStatus::InProgress)
+        ->and($secondPromo->fresh()->redeemed_at)->not->toBeNull();
+
+    test()->actingAs($student)
+        ->post(route('exams.start', $exam), ['promo_code' => $secondPromo->code])
+        ->assertRedirect(route('exams.take', $exam));
+});
+
 test('admin question edit exposes is_correct only in admin context', function () {
     $admin = User::factory()->admin()->create();
     createPublishedExamWithQuestion();

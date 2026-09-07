@@ -224,10 +224,9 @@ test('second exam excludes questions from first submitted attempt', function () 
         'submitted_at' => now(),
     ]);
 
-    $examTwo = createGeneratedEntExam($direction);
-    $examTwo->update(['title' => 'ЕНТ тест 2']);
-    $attemptTwo = $service->startOrResume($examTwo, $student, 'BBB22');
+    $attemptTwo = $service->startOrResume($examOne, $student, 'BBB22');
     $secondQuestionIds = $attemptTwo->snapshotQuestions->pluck('question_id')->all();
 
-    expect(array_intersect($firstQuestionIds, $secondQuestionIds))->toBeEmpty();
+    expect($attemptOne->id)->not->toBe($attemptTwo->id)
+        ->and(array_intersect($firstQuestionIds, $secondQuestionIds))->toBeEmpty();
 });

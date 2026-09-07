@@ -29,6 +29,8 @@ class ExamAttemptService
         $attempt = ExamAttempt::query()
             ->where('exam_id', $exam->id)
             ->where('user_id', $user->id)
+            ->where('status', ExamAttemptStatus::InProgress)
+            ->latest('id')
             ->first();
 
         if ($attempt === null) {
@@ -49,19 +51,14 @@ class ExamAttemptService
             ]);
         }
 
-        $existing = ExamAttempt::query()
+        $inProgress = ExamAttempt::query()
             ->where('exam_id', $exam->id)
             ->where('user_id', $user->id)
+            ->where('status', ExamAttemptStatus::InProgress)
             ->first();
 
-        if ($existing !== null) {
-            if ($existing->status === ExamAttemptStatus::Submitted) {
-                throw ValidationException::withMessages([
-                    'exam' => 'Вы уже завершили этот экзамен.',
-                ]);
-            }
-
-            return $existing->load([
+        if ($inProgress !== null) {
+            return $inProgress->load([
                 'snapshotQuestions.options',
                 'answers',
             ]);
@@ -95,8 +92,8 @@ class ExamAttemptService
                 $this->createGeneratedSnapshots($attempt, $exam, $user);
                 $maxScore = $this->calculateMaxScoreFromSnapshots($attempt);
             } else {
-                $this->createManualSnapshots($attempt, $exam);
-                $maxScore = $this->calculateManualMaxScore($exam);
+                $this->createManualSnapshots($attempt, $exam, $user);
+                $maxScore = $this->calculateMaxScoreFromSnapshots($attempt);
             }
 
             $attempt->update([
@@ -192,7 +189,7 @@ class ExamAttemptService
         }
     }
 
-    private function createManualSnapshots(ExamAttempt $attempt, Exam $exam): void
+    private function createManualSnapshots(ExamAttempt $attempt, Exam $exam, User $user): void
     {
         $exam->load([
             'examQuestions.question.options' => fn ($query) => $query->orderBy('sort_order'),
@@ -200,7 +197,17 @@ class ExamAttemptService
             'examQuestions.question.subject',
         ]);
 
-        foreach ($exam->examQuestions as $examQuestion) {
+        $seenQuestionIds = app(StudentQuestionHistory::class)->seenQuestionIds($user);
+
+        $examQuestions = $exam->examQuestions
+            ->filter(fn ($examQuestion) => ! in_array($examQuestion->question_id, $seenQuestionIds, true))
+            ->values();
+
+        if ($examQuestions->isEmpty()) {
+            $examQuestions = $exam->examQuestions;
+        }
+
+        foreach ($examQuestions as $examQuestion) {
             $question = $examQuestion->question;
 
             $this->snapshotQuestion(
@@ -213,16 +220,6 @@ class ExamAttemptService
                 pointsOverride: $examQuestion->points_override,
             );
         }
-    }
-
-    private function calculateManualMaxScore(Exam $exam): float
-    {
-        $exam->loadMissing('examQuestions.question');
-
-        return (float) $exam->examQuestions->sum(
-            fn ($examQuestion) => $examQuestion->points_override
-                ?? $examQuestion->question->type->maxScore(),
-        );
     }
 
     private function snapshotQuestion(

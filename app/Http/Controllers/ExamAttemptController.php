@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ExamAttemptStatus;
 use App\Http\Requests\Exam\StartExamAttemptRequest;
 use App\Http\Requests\Exam\SubmitExamAttemptRequest;
 use App\Http\Resources\Exam\ExamAttemptQuestionResource;
@@ -34,10 +35,6 @@ class ExamAttemptController extends Controller
             return redirect()->route('exam.show');
         }
 
-        if ($attempt->status->value === 'submitted') {
-            abort(403, 'Вы уже завершили этот экзамен.');
-        }
-
         $questions = $attempt->snapshotQuestions;
 
         return Inertia::render('exams/Take', [
@@ -67,6 +64,8 @@ class ExamAttemptController extends Controller
         $attempt = ExamAttempt::query()
             ->where('exam_id', $exam->id)
             ->where('user_id', $request->user()->id)
+            ->where('status', ExamAttemptStatus::InProgress)
+            ->latest('id')
             ->firstOrFail();
 
         $graded = $this->attempts->submit($attempt, $request->validated('answers'));
