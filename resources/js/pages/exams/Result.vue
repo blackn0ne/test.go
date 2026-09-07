@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { ArrowLeft, BarChart3 } from '@lucide/vue';
+import { Head } from '@inertiajs/vue3';
+import { BarChart3 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import ExamResultQuestionCard from '@/components/exam/ExamResultQuestionCard.vue';
 import ExamResultScoreHero from '@/components/exam/ExamResultScoreHero.vue';
-import { Button } from '@/components/ui/button';
 import ExamScreenLayout from '@/layouts/exam/ExamScreenLayout.vue';
 import { formatExamScore } from '@/lib/examScores';
 import { cn } from '@/lib/utils';
-import { show as examShow } from '@/routes/exam';
 import type {
     ExamResultAttempt,
     ExamResultQuestion,
@@ -70,15 +68,6 @@ const sectionStats = computed(() =>
             class="flex min-h-[calc(100dvh-4rem)] flex-1 flex-col bg-gradient-to-b from-muted/20 via-background to-background"
         >
             <div class="flex w-full flex-1 flex-col gap-5 p-4 lg:p-6">
-                <div class="flex flex-wrap items-center justify-end gap-3">
-                    <Button as-child variant="outline" class="rounded-xl">
-                        <Link :href="examShow()">
-                            <ArrowLeft class="size-4" />
-                            Басты бетке
-                        </Link>
-                    </Button>
-                </div>
-
                 <ExamResultScoreHero :attempt="props.attempt" />
 
                 <section
