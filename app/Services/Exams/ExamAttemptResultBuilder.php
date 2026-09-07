@@ -55,9 +55,11 @@ final class ExamAttemptResultBuilder
                 return [
                     ...(new ExamAttemptQuestionResource($snapshot))->resolve(),
                     'max_score' => $snapshot->type->maxScore(),
-                    'score_awarded' => $answer?->score_awarded !== null
-                        ? (float) $answer->score_awarded
-                        : 0.0,
+                    'score_awarded' => (int) round(
+                        $answer?->score_awarded !== null
+                            ? (float) $answer->score_awarded
+                            : 0.0,
+                    ),
                     'selected_option_ids' => $answer?->selected_option_ids ?? [],
                     'correct_option_ids' => $correctSnapshotIds,
                 ];
@@ -70,7 +72,7 @@ final class ExamAttemptResultBuilder
             $sectionQuestions = collect($questions)
                 ->where('section_order', $section['order']);
 
-            $sections[$index]['score'] = round((float) $sectionQuestions->sum('score_awarded'), 1);
+            $sections[$index]['score'] = (int) round((float) $sectionQuestions->sum('score_awarded'));
             $sections[$index]['max_score'] = (int) $sectionQuestions->sum('max_score');
         }
 

@@ -118,8 +118,8 @@ class ExamAttemptController extends Controller
             'attempt' => [
                 'id' => $attempt->id,
                 'status' => $attempt->status->value,
-                'total_score' => $attempt->total_score,
-                'max_score' => $attempt->max_score,
+                'total_score' => (int) round((float) $attempt->total_score),
+                'max_score' => (int) $attempt->max_score,
                 'submitted_at' => $attempt->submitted_at,
             ],
             'sections' => $result['sections'],

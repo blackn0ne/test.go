@@ -2,6 +2,7 @@
 import { CheckCircle2, CircleDashed, MinusCircle, XCircle } from '@lucide/vue';
 import { computed } from 'vue';
 import RichContent from '@/components/RichContent.vue';
+import { formatExamScore } from '@/lib/examScores';
 import { cn } from '@/lib/utils';
 import type { ExamResultQuestion } from '@/types/exam';
 
@@ -168,7 +169,8 @@ function doubleGroupState(group: 'first' | 'second'): 'correct' | 'wrong' | 'una
                 <span
                     class="rounded-xl border border-border/60 bg-background/80 px-2.5 py-1 text-xs font-bold tabular-nums"
                 >
-                    {{ question.score_awarded }} / {{ question.max_score }}
+                    {{ formatExamScore(question.score_awarded) }} /
+                    {{ formatExamScore(question.max_score) }}
                 </span>
             </div>
         </header>
