@@ -3,6 +3,7 @@
 namespace App\Services\Exams;
 
 use App\Enums\QuestionType;
+use App\Models\ExamAttemptAnswer;
 use App\Models\ExamAttemptQuestion;
 use App\Models\ExamAttemptQuestionOption;
 use App\Models\Question;
@@ -95,6 +96,13 @@ class DoubleSelectSnapshotSync
     public function sync(ExamAttemptQuestion $snapshot, Question $sourceQuestion): void
     {
         DB::transaction(function () use ($snapshot, $sourceQuestion): void {
+            $snapshot->loadMissing('options');
+
+            /** @var array<int, int> $oldSnapshotOptionToSourceId */
+            $oldSnapshotOptionToSourceId = $snapshot->options
+                ->pluck('question_option_id', 'id')
+                ->all();
+
             $snapshot->update([
                 'double_first_prompt' => $sourceQuestion->double_first_prompt,
                 'double_second_prompt' => $sourceQuestion->double_second_prompt,
@@ -114,6 +122,52 @@ class DoubleSelectSnapshotSync
                     'sort_order' => $option->sort_order,
                 ]);
             }
+
+            $this->remapSavedAnswers(
+                $snapshot,
+                $oldSnapshotOptionToSourceId,
+            );
         });
+    }
+
+    /**
+     * @param  array<int, int>  $oldSnapshotOptionToSourceId
+     */
+    private function remapSavedAnswers(
+        ExamAttemptQuestion $snapshot,
+        array $oldSnapshotOptionToSourceId,
+    ): void {
+        $newOptions = ExamAttemptQuestionOption::query()
+            ->where('exam_attempt_question_id', $snapshot->id)
+            ->get()
+            ->keyBy('question_option_id');
+
+        ExamAttemptAnswer::query()
+            ->where('exam_attempt_question_id', $snapshot->id)
+            ->each(function (ExamAttemptAnswer $answer) use ($oldSnapshotOptionToSourceId, $newOptions): void {
+                $remappedIds = collect($answer->selected_option_ids)
+                    ->map(function (int $snapshotOptionId) use ($oldSnapshotOptionToSourceId, $newOptions): ?int {
+                        $sourceOptionId = $oldSnapshotOptionToSourceId[$snapshotOptionId] ?? null;
+
+                        if ($sourceOptionId === null) {
+                            return null;
+                        }
+
+                        return $newOptions->get($sourceOptionId)?->id;
+                    })
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                if ($remappedIds === []) {
+                    $answer->delete();
+
+                    return;
+                }
+
+                $answer->update([
+                    'selected_option_ids' => $remappedIds,
+                ]);
+            });
     }
 }

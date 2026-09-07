@@ -15,6 +15,7 @@ import RichContent from '@/components/RichContent.vue';
 import { Button } from '@/components/ui/button';
 import { useExamTimer } from '@/composables/useExamTimer';
 import {
+    buildSavePayloadFromSelections,
     buildSelectionsFromSavedAnswers,
     useExamAnswerPersistence,
 } from '@/composables/useExamAnswerPersistence';
@@ -246,7 +247,9 @@ function buildAnswersPayload(): Array<{
     }));
 }
 
-useExamAnswerPersistence(props.exam.id, selections, buildAnswersPayload);
+useExamAnswerPersistence(props.exam.id, selections, () =>
+    buildSavePayloadFromSelections(selections.value),
+);
 </script>
 
 <template>

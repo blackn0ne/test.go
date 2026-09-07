@@ -1,35 +1,58 @@
-import { useHttp } from '@inertiajs/vue3';
 import { ref, watch, type Ref } from 'vue';
-import ExamAttemptController from '@/actions/App/Http/Controllers/ExamAttemptController';
 
 type AnswerPayload = {
     exam_attempt_question_id: number;
     selected_option_ids: number[];
 };
 
+function csrfToken(): string {
+    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+
+    return match ? decodeURIComponent(match[1]) : '';
+}
+
+export function buildSavePayloadFromSelections(
+    selections: Record<number, number[]>,
+): AnswerPayload[] {
+    return Object.entries(selections).map(([questionId, optionIds]) => ({
+        exam_attempt_question_id: Number(questionId),
+        selected_option_ids: optionIds,
+    }));
+}
+
 export function useExamAnswerPersistence(
     examId: number,
     selections: Ref<Record<number, number[]>>,
     buildPayload: () => AnswerPayload[],
 ): { isSaving: Ref<boolean> } {
-    const http = useHttp();
     const isSaving = ref(false);
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     async function persist(): Promise<void> {
+        const payload = buildPayload();
+
+        if (payload.length === 0) {
+            return;
+        }
+
         isSaving.value = true;
 
         try {
-            const saveUrl =
-                typeof ExamAttemptController.saveAnswers?.url === 'function'
-                    ? ExamAttemptController.saveAnswers.url(examId)
-                    : `/exams/${examId}/answers`;
-
-            await http.post(saveUrl, {
-                data: {
-                    answers: buildPayload(),
+            const response = await fetch(`/exams/${examId}/answers`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-XSRF-TOKEN': csrfToken(),
                 },
+                body: JSON.stringify({ answers: payload }),
             });
+
+            if (! response.ok) {
+                throw new Error(`Save failed: ${response.status}`);
+            }
         } finally {
             isSaving.value = false;
         }

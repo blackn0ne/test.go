@@ -291,6 +291,41 @@ test('student answers are saved and restored during in-progress attempt', functi
         );
 });
 
+test('incremental answer saves preserve previously stored answers', function () {
+    $exam = createPublishedExamWithQuestion();
+    $student = createStudentWithDirection();
+    $admin = User::factory()->admin()->create();
+    $promoCode = createPromoCodeForStudent($student, $exam, $admin);
+    $service = app(ExamAttemptService::class);
+
+    $attempt = $service->startOrResume($exam, $student, $promoCode->code);
+    $snapshotQuestion = $attempt->snapshotQuestions->first();
+    $firstOption = $snapshotQuestion->options->firstWhere('label', 'A');
+    $secondOption = $snapshotQuestion->options->firstWhere('label', 'B');
+
+    $service->saveAnswers($attempt, [
+        [
+            'exam_attempt_question_id' => $snapshotQuestion->id,
+            'selected_option_ids' => [$firstOption->id],
+        ],
+    ]);
+
+    $service->saveAnswers($attempt, [
+        [
+            'exam_attempt_question_id' => $snapshotQuestion->id,
+            'selected_option_ids' => [$firstOption->id, $secondOption->id],
+        ],
+    ]);
+
+    $attempt->refresh()->load('answers');
+
+    expect($attempt->answers)->toHaveCount(1)
+        ->and($attempt->answers->first()->selected_option_ids)->toBe([
+            $firstOption->id,
+            $secondOption->id,
+        ]);
+});
+
 test('admin question edit exposes is_correct only in admin context', function () {
     $admin = User::factory()->admin()->create();
     createPublishedExamWithQuestion();

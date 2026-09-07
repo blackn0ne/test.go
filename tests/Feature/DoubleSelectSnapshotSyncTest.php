@@ -4,6 +4,7 @@ use App\Enums\ExamAttemptStatus;
 use App\Enums\QuestionType;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
+use App\Models\ExamAttemptAnswer;
 use App\Models\ExamAttemptQuestion;
 use App\Models\ExamAttemptQuestionOption;
 use App\Models\Question;
@@ -128,4 +129,54 @@ test('find attempt syncs legacy double snapshots before returning', function () 
 
     expect($loadedSnapshot?->double_first_prompt)->toBe('<p>Header A</p>')
         ->and($loadedSnapshot?->options)->toHaveCount(8);
+});
+
+test('double select snapshot sync remaps saved answer option ids', function () {
+    $question = createMigratedDoubleQuestion();
+    $user = User::factory()->create();
+    $exam = Exam::factory()->create();
+
+    $attempt = ExamAttempt::factory()->create([
+        'exam_id' => $exam->id,
+        'user_id' => $user->id,
+        'status' => ExamAttemptStatus::InProgress,
+    ]);
+
+    $snapshot = ExamAttemptQuestion::query()->create([
+        'exam_attempt_id' => $attempt->id,
+        'question_id' => $question->id,
+        'subject_id' => $question->subject_id,
+        'subject_name' => 'Test',
+        'section_order' => 1,
+        'type' => QuestionType::Double,
+        'body' => $question->body,
+        'sort_order' => 1,
+    ]);
+
+    $legacyOption = ExamAttemptQuestionOption::query()->create([
+        'exam_attempt_question_id' => $snapshot->id,
+        'question_option_id' => $question->options->firstWhere('select_group', 'first')?->id,
+        'select_group' => 'first',
+        'label' => 'A',
+        'content' => '<p>Legacy header</p>',
+        'sort_order' => 0,
+    ]);
+
+    ExamAttemptAnswer::query()->create([
+        'exam_attempt_id' => $attempt->id,
+        'exam_attempt_question_id' => $snapshot->id,
+        'selected_option_ids' => [$legacyOption->id],
+        'answered_at' => now(),
+    ]);
+
+    app(DoubleSelectSnapshotSync::class)->syncIfNeeded($snapshot->fresh(['options']));
+
+    $answer = ExamAttemptAnswer::query()->first();
+    $newFirstOptionId = ExamAttemptQuestionOption::query()
+        ->where('exam_attempt_question_id', $snapshot->id)
+        ->where('select_group', 'first')
+        ->where('label', 'A')
+        ->value('id');
+
+    expect($answer?->selected_option_ids)->toBe([$newFirstOptionId]);
 });
