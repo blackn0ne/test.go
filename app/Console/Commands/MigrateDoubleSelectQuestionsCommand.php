@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Exams\DoubleSelectSnapshotSync;
 use App\Services\Questions\DoubleSelectQuestionMigrator;
 use Illuminate\Console\Command;
 
@@ -13,7 +14,7 @@ class MigrateDoubleSelectQuestionsCommand extends Command
 
     protected $description = 'Migrate legacy double questions: first select A/B become headers, second select options copy to both selects';
 
-    public function handle(DoubleSelectQuestionMigrator $migrator): int
+    public function handle(DoubleSelectQuestionMigrator $migrator, DoubleSelectSnapshotSync $snapshotSync): int
     {
         $dryRun = (bool) $this->option('dry-run');
         $force = (bool) $this->option('force');
@@ -25,6 +26,11 @@ class MigrateDoubleSelectQuestionsCommand extends Command
         $this->info('Migrating double-type questions...');
 
         $result = $migrator->migrate($dryRun, $force);
+
+        if (! $dryRun) {
+            $snapshotResult = $snapshotSync->syncAll();
+            $this->info("Exam snapshots synced: {$snapshotResult['synced']}, skipped: {$snapshotResult['skipped']}.");
+        }
 
         foreach ($result['messages'] as $message) {
             if (str_contains($message, 'failed')) {

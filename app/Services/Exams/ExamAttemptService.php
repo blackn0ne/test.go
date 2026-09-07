@@ -22,6 +22,7 @@ class ExamAttemptService
         private readonly ExamGrader $grader,
         private readonly ExamPaperGenerator $paperGenerator,
         private readonly PromoCodeBatchService $promoCodes,
+        private readonly DoubleSelectSnapshotSync $doubleSnapshotSync,
     ) {}
 
     public function findAttempt(Exam $exam, User $user): ?ExamAttempt
@@ -37,10 +38,30 @@ class ExamAttemptService
             return null;
         }
 
+        $this->syncLegacyDoubleSnapshots($attempt);
+
         return $attempt->load([
             'snapshotQuestions.options',
             'answers',
         ]);
+    }
+
+    private function syncLegacyDoubleSnapshots(ExamAttempt $attempt): void
+    {
+        $attempt->loadMissing(['snapshotQuestions.options']);
+
+        $synced = false;
+
+        foreach ($attempt->snapshotQuestions as $snapshot) {
+            if ($this->doubleSnapshotSync->syncIfNeeded($snapshot)) {
+                $synced = true;
+            }
+        }
+
+        if ($synced) {
+            $attempt->unsetRelation('snapshotQuestions');
+            $attempt->load(['snapshotQuestions.options']);
+        }
     }
 
     public function startOrResume(Exam $exam, User $user, ?string $promoCode = null): ExamAttempt
@@ -58,6 +79,8 @@ class ExamAttemptService
             ->first();
 
         if ($inProgress !== null) {
+            $this->syncLegacyDoubleSnapshots($inProgress);
+
             return $inProgress->load([
                 'snapshotQuestions.options',
                 'answers',
