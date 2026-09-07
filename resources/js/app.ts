@@ -16,6 +16,7 @@ createInertiaApp({
                 return AuthLayout;
             case name === 'exam/Show':
             case name === 'exams/Take':
+            case name === 'exams/Result':
                 return null;
             default:
                 return AppLayout;

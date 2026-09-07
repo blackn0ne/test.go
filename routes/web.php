@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AdminAuthenticatedSessionController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\StudentExamController;
 use App\Http\Controllers\UserDirectionController;
@@ -19,13 +20,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('direction', [UserDirectionController::class, 'update'])
         ->name('direction.update');
 
-    Route::inertia('dashboard', 'Dashboard')
+    Route::get('dashboard', DashboardController::class)
         ->name('dashboard');
 
-    Route::middleware('direction')->group(function () {
-        Route::get('exam', [StudentExamController::class, 'show'])
-            ->name('exam.show');
+    Route::get('exam', [StudentExamController::class, 'show'])
+        ->name('exam.show');
 
+    Route::middleware('direction')->group(function () {
         Route::get('exams/{exam}/take', [ExamAttemptController::class, 'show'])
             ->name('exams.take');
         Route::post('exams/{exam}/start', [ExamAttemptController::class, 'start'])

@@ -9,17 +9,21 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('student without direction can access dashboard but not exams', function () {
+test('student without direction can access exam lobby but not exams', function () {
     $student = User::factory()->create(['direction_id' => null]);
     $exam = Exam::factory()->create();
 
     $this->actingAs($student)
-        ->get(route('dashboard'))
+        ->get(route('exam.show'))
         ->assertOk();
 
     $this->actingAs($student)
+        ->get(route('dashboard'))
+        ->assertRedirect(route('exam.show'));
+
+    $this->actingAs($student)
         ->get(route('exams.take', $exam))
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('exam.show'));
 });
 
 test('student can save direction', function () {
@@ -81,7 +85,7 @@ test('shared auth props include iin and direction requirement', function () {
     ]);
 
     $this->actingAs($student)
-        ->get(route('dashboard'))
+        ->get(route('exam.show'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('auth.user.iin', '123456789012')

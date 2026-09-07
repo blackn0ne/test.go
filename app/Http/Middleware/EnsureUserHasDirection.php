@@ -22,15 +22,11 @@ class EnsureUserHasDirection
         if ($request->routeIs(
             'direction.update',
             'logout',
-            'dashboard',
+            'exam.show',
         )) {
             return $next($request);
         }
 
-        if ($request->header('X-Inertia')) {
-            return redirect()->route('dashboard');
-        }
-
-        return redirect()->route('dashboard');
+        return redirect()->route('exam.show');
     }
 }
