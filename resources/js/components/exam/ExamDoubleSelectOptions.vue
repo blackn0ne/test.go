@@ -64,7 +64,7 @@ function handleSelect(group: 'first' | 'second', value: string): void {
 </script>
 
 <template>
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid gap-4">
         <div
             v-for="item in groups"
             :key="item.group"
@@ -77,8 +77,8 @@ function handleSelect(group: 'first' | 'second', value: string): void {
                 )
             "
         >
-            <div class="flex flex-col gap-4">
-                <div class="flex min-w-0 gap-3">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div class="flex min-w-0 flex-1 gap-3">
                     <div
                         :class="
                             cn(
@@ -106,7 +106,7 @@ function handleSelect(group: 'first' | 'second', value: string): void {
                     </div>
                 </div>
 
-                <div class="w-full">
+                <div class="w-full shrink-0 sm:w-72 lg:w-96">
                     <select
                         :id="`double-select-${question.id}-${item.group}`"
                         class="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
