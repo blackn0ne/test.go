@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle2, CircleDashed, MinusCircle, XCircle } from 'lucide-vue';
+import { CheckCircle2, CircleDashed, MinusCircle, XCircle } from '@lucide/vue';
 import { computed } from 'vue';
 import RichContent from '@/components/RichContent.vue';
 import { cn } from '@/lib/utils';

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { ArrowLeft, BarChart3 } from 'lucide-vue';
+import { ArrowLeft, BarChart3 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import ExamResultQuestionCard from '@/components/exam/ExamResultQuestionCard.vue';
 import ExamResultScoreHero from '@/components/exam/ExamResultScoreHero.vue';
