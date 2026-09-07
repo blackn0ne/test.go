@@ -34,7 +34,7 @@ const emit = defineEmits<{
             type="button"
             :class="
                 cn(
-                    'group flex w-full items-start gap-4 rounded-2xl border-2 border-border/70 bg-background/80 p-4 text-left transition-all duration-200',
+                    'group flex w-full items-center gap-4 rounded-2xl border-2 border-border/70 bg-background/80 p-4 text-left transition-all duration-200',
                     optionTheme.hover,
                     isChecked(option.id) && optionTheme.selected,
                 )
@@ -52,7 +52,7 @@ const emit = defineEmits<{
                 {{ option.label }}
             </div>
 
-            <div class="min-w-0 flex-1 pt-0.5">
+            <div class="flex min-w-0 flex-1 items-center">
                 <RichContent
                     v-if="option.content"
                     :content="option.content"
@@ -63,7 +63,7 @@ const emit = defineEmits<{
                 </p>
             </div>
 
-            <div class="flex shrink-0 items-center pt-1">
+            <div class="flex shrink-0 items-center">
                 <Checkbox
                     v-if="question.type === 'multiple'"
                     :model-value="isChecked(option.id)"
@@ -90,3 +90,14 @@ const emit = defineEmits<{
         </button>
     </div>
 </template>
+
+<style scoped>
+:deep(.rich-content-compact) {
+    display: flex;
+    align-items: center;
+}
+
+:deep(.rich-content-compact p) {
+    line-height: 1.4;
+}
+</style>

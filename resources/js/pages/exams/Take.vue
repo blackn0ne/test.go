@@ -293,16 +293,6 @@ function buildAnswersPayload(): Array<{
                             </div>
 
                             <div class="space-y-3">
-                                <p
-                                    v-if="activeQuestion.type !== 'double'"
-                                    class="flex items-center gap-2 text-sm font-medium text-muted-foreground"
-                                >
-                                    <span
-                                        class="size-1.5 rounded-full bg-primary"
-                                    />
-                                    Жауап нұсқасын таңдаңыз
-                                </p>
-
                                 <ExamDoubleSelectOptions
                                     v-if="activeQuestion.type === 'double'"
                                     :question="activeQuestion"
@@ -344,25 +334,22 @@ function buildAnswersPayload(): Array<{
                     <div
                         class="sticky bottom-0 z-10 -mx-4 border-t border-border/60 bg-background/85 px-4 py-4 backdrop-blur-md lg:-mx-6 lg:px-6"
                     >
-                        <div
-                            class="mx-auto flex w-full flex-wrap items-center justify-center gap-3 sm:justify-start"
-                        >
+                        <div class="grid w-full grid-cols-2 gap-3">
                             <Button
                                 type="button"
                                 variant="outline"
-                                class="gap-2 rounded-full"
+                                class="h-12 w-full gap-2 rounded-xl border-border/70 text-base font-semibold shadow-sm"
                                 :disabled="activeQuestionIndex === 0"
                                 @click="
                                     selectQuestion(activeQuestionIndex - 1)
                                 "
                             >
-                                <ArrowLeft class="size-4" />
+                                <ArrowLeft class="size-5" />
                                 Артқа
                             </Button>
                             <Button
                                 type="button"
-                                variant="outline"
-                                class="gap-2 rounded-full"
+                                class="h-12 w-full gap-2 rounded-xl text-base font-semibold shadow-sm"
                                 :disabled="
                                     activeQuestionIndex >=
                                     visibleQuestions.length - 1
@@ -372,7 +359,7 @@ function buildAnswersPayload(): Array<{
                                 "
                             >
                                 Алға
-                                <ArrowRight class="size-4" />
+                                <ArrowRight class="size-5" />
                             </Button>
                         </div>
                     </div>

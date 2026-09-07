@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { BookOpen } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
+import { useDragScroll } from '@/composables/useDragScroll';
 import { cn } from '@/lib/utils';
 
 type QuestionSlot = {
@@ -42,6 +43,30 @@ function slotClass(index: number, questionId: number): string {
         ! answered && ! active && 'border border-border/80 bg-background text-foreground hover:border-primary/30 hover:bg-primary/5',
     );
 }
+
+const scrollContainerRef = ref<HTMLElement | null>(null);
+const { handleSlotClick } = useDragScroll(scrollContainerRef);
+
+watch(
+    () => props.activeIndex,
+    (index) => {
+        const container = scrollContainerRef.value;
+
+        if (container === null) {
+            return;
+        }
+
+        const activeButton = container.querySelector<HTMLElement>(
+            `[data-question-index="${index}"]`,
+        );
+
+        activeButton?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'center',
+        });
+    },
+);
 </script>
 
 <template>
@@ -90,16 +115,20 @@ function slotClass(index: number, questionId: number): string {
 
             <div class="relative px-1 py-1.5">
                 <div
-                    class="flex gap-2 overflow-x-auto overflow-y-visible px-1 py-1 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
+                    ref="scrollContainerRef"
+                    class="flex gap-2 overflow-x-auto overflow-y-visible px-1 py-1 touch-pan-x [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
                 >
                     <button
                         v-for="(question, index) in questions"
                         :key="question.id"
                         type="button"
+                        :data-question-index="index"
                         :class="slotClass(index, question.id)"
                         :aria-label="`Сұрақ ${index + 1}`"
                         :aria-current="activeIndex === index ? 'true' : undefined"
-                        @click="emit('select', index)"
+                        @click="
+                            handleSlotClick(() => emit('select', index))
+                        "
                     >
                         {{ index + 1 }}
                     </button>
