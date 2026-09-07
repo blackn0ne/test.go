@@ -7,15 +7,15 @@ import type { ExamQuestion, QuestionOption } from '@/types/exam';
 const GROUP_THEMES = [
     {
         label: 'A',
-        badge: 'bg-sky-500 text-white',
-        border: 'border-sky-500/20',
-        bg: 'bg-sky-500/5',
+        badge: 'border border-border bg-muted text-muted-foreground',
+        border: 'border-border/70',
+        bg: 'bg-muted/20',
     },
     {
         label: 'B',
-        badge: 'bg-emerald-500 text-white',
-        border: 'border-emerald-500/20',
-        bg: 'bg-emerald-500/5',
+        badge: 'border border-border bg-muted text-muted-foreground',
+        border: 'border-border/70',
+        bg: 'bg-muted/20',
     },
 ] as const;
 
@@ -64,7 +64,7 @@ function handleSelect(group: 'first' | 'second', value: string): void {
 </script>
 
 <template>
-    <div class="grid gap-4">
+    <div class="grid gap-4 sm:grid-cols-2">
         <div
             v-for="item in groups"
             :key="item.group"
@@ -107,16 +107,11 @@ function handleSelect(group: 'first' | 'second', value: string): void {
                 </div>
 
                 <div class="w-full">
-                    <label
-                        class="mb-1.5 block text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        :for="`double-select-${question.id}-${item.group}`"
-                    >
-                        Таңдаңыз
-                    </label>
                     <select
                         :id="`double-select-${question.id}-${item.group}`"
                         class="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                         :value="selectedForGroup(item.group) ?? ''"
+                        :aria-label="`Селект ${item.theme.label}`"
                         @change="
                             handleSelect(
                                 item.group,

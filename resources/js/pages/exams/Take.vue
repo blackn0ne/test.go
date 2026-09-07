@@ -4,7 +4,6 @@ import {
     ArrowLeft,
     ArrowRight,
     FileText,
-    HelpCircle,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ExamAttemptController from '@/actions/App/Http/Controllers/ExamAttemptController';
@@ -13,7 +12,6 @@ import ExamDoubleSelectOptions from '@/components/exam/ExamDoubleSelectOptions.v
 import ExamQuestionNavigator from '@/components/exam/ExamQuestionNavigator.vue';
 import InputError from '@/components/InputError.vue';
 import RichContent from '@/components/RichContent.vue';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useExamTimer } from '@/composables/useExamTimer';
 import ExamScreenLayout from '@/layouts/exam/ExamScreenLayout.vue';
@@ -73,12 +71,6 @@ const answeredInSection = computed(
         visibleQuestions.value.filter((question) =>
             isQuestionAnswered(question),
         ).length,
-);
-
-const totalAnswered = computed(
-    () =>
-        props.questions.filter((question) => isQuestionAnswered(question))
-            .length,
 );
 
 watch(activeSection, () => {
@@ -251,7 +243,7 @@ function buildAnswersPayload(): Array<{
             class="flex min-h-[calc(100dvh-4rem)] flex-1 flex-col bg-gradient-to-b from-muted/20 via-background to-background"
             v-slot="{ errors }"
         >
-            <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 p-4 lg:p-6">
+            <div class="mx-auto flex w-full flex-1 flex-col gap-5 p-4 lg:p-6">
                 <ExamQuestionNavigator
                     :section-name="activeSectionName"
                     :questions="visibleQuestions"
@@ -270,36 +262,6 @@ function buildAnswersPayload(): Array<{
                     <article
                         class="overflow-hidden rounded-2xl border border-border/60 bg-background shadow-sm"
                     >
-                        <div
-                            class="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 bg-muted/20 px-5 py-4"
-                        >
-                            <div class="flex items-center gap-3">
-                                <div
-                                    class="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                                >
-                                    <HelpCircle class="size-5" />
-                                </div>
-                                <div>
-                                    <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                                        Сұрақ
-                                    </p>
-                                    <p class="text-lg font-semibold tabular-nums">
-                                        № {{ activeQuestionIndex + 1 }}
-                                        <span class="text-sm font-normal text-muted-foreground">
-                                            / {{ visibleQuestions.length }}
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <Badge
-                                variant="outline"
-                                class="rounded-full px-3 py-1"
-                            >
-                                {{ totalAnswered }} / {{ props.questions.length }} барлығы
-                            </Badge>
-                        </div>
-
                         <div class="space-y-6 px-5 py-6">
                             <div
                                 v-if="shouldShowContext(activeQuestion)"
@@ -332,16 +294,13 @@ function buildAnswersPayload(): Array<{
 
                             <div class="space-y-3">
                                 <p
+                                    v-if="activeQuestion.type !== 'double'"
                                     class="flex items-center gap-2 text-sm font-medium text-muted-foreground"
                                 >
                                     <span
                                         class="size-1.5 rounded-full bg-primary"
                                     />
-                                    {{
-                                        activeQuestion.type === 'double'
-                                            ? 'Выберите ответ в каждом селекте'
-                                            : 'Жауап нұсқасын таңдаңыз'
-                                    }}
+                                    Жауап нұсқасын таңдаңыз
                                 </p>
 
                                 <ExamDoubleSelectOptions
@@ -386,7 +345,7 @@ function buildAnswersPayload(): Array<{
                         class="sticky bottom-0 z-10 -mx-4 border-t border-border/60 bg-background/85 px-4 py-4 backdrop-blur-md lg:-mx-6 lg:px-6"
                     >
                         <div
-                            class="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-3 sm:justify-start"
+                            class="mx-auto flex w-full flex-wrap items-center justify-center gap-3 sm:justify-start"
                         >
                             <Button
                                 type="button"

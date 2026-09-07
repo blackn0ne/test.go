@@ -105,25 +105,6 @@ function slotClass(index: number, questionId: number): string {
                     </button>
                 </div>
             </div>
-
-            <div class="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-                <span class="inline-flex items-center gap-1.5">
-                    <span
-                        class="size-2.5 rounded-md border border-border bg-background"
-                    />
-                    Жауапсыз
-                </span>
-                <span class="inline-flex items-center gap-1.5">
-                    <span class="size-2.5 rounded-md bg-emerald-500" />
-                    Жауап берілді
-                </span>
-                <span class="inline-flex items-center gap-1.5">
-                    <span
-                        class="size-2.5 rounded-md bg-primary shadow-[0_0_0_2px_var(--background),0_0_0_3px_hsl(var(--primary))]"
-                    />
-                    Ағымдағы
-                </span>
-            </div>
         </div>
     </div>
 </template>
