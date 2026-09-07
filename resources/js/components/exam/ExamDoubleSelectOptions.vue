@@ -4,18 +4,20 @@ import RichContent from '@/components/RichContent.vue';
 import { cn } from '@/lib/utils';
 import type { ExamQuestion, QuestionOption } from '@/types/exam';
 
-const GROUP_THEMES = {
-    first: {
+const GROUP_THEMES = [
+    {
+        label: 'A',
         badge: 'bg-sky-500 text-white',
         border: 'border-sky-500/20',
         bg: 'bg-sky-500/5',
     },
-    second: {
+    {
+        label: 'B',
         badge: 'bg-emerald-500 text-white',
         border: 'border-emerald-500/20',
         bg: 'bg-emerald-500/5',
     },
-} as const;
+] as const;
 
 const props = defineProps<{
     question: ExamQuestion;
@@ -27,14 +29,14 @@ const emit = defineEmits<{
 }>();
 
 const groups = computed(() =>
-    (['first', 'second'] as const).map((group) => ({
+    (['first', 'second'] as const).map((group, index) => ({
         group,
         prompt:
             group === 'first'
                 ? props.question.double_first_prompt
                 : props.question.double_second_prompt,
         options: optionsForGroup(group),
-        theme: GROUP_THEMES[group],
+        theme: GROUP_THEMES[index],
     })),
 );
 
@@ -62,7 +64,7 @@ function handleSelect(group: 'first' | 'second', value: string): void {
 </script>
 
 <template>
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid gap-4">
         <div
             v-for="item in groups"
             :key="item.group"
@@ -75,49 +77,66 @@ function handleSelect(group: 'first' | 'second', value: string): void {
                 )
             "
         >
-            <div class="mb-4 min-w-0">
-                <RichContent
-                    v-if="item.prompt"
-                    :content="item.prompt"
-                    compact
-                    class="text-sm font-medium leading-relaxed"
-                />
-                <p
-                    v-else
-                    class="text-sm text-muted-foreground italic"
-                >
-                    Заголовок селекта не заполнен
-                </p>
-            </div>
+            <div class="flex flex-col gap-4">
+                <div class="flex min-w-0 gap-3">
+                    <div
+                        :class="
+                            cn(
+                                'flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold shadow-sm',
+                                item.theme.badge,
+                            )
+                        "
+                    >
+                        {{ item.theme.label }}
+                    </div>
 
-            <label
-                class="mb-1.5 block text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                :for="`double-select-${question.id}-${item.group}`"
-            >
-                Таңдаңыз
-            </label>
-            <select
-                :id="`double-select-${question.id}-${item.group}`"
-                class="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                :value="selectedForGroup(item.group) ?? ''"
-                @change="
-                    handleSelect(
-                        item.group,
-                        ($event.target as HTMLSelectElement).value,
-                    )
-                "
-            >
-                <option value="" disabled>
-                    Выберите вариант...
-                </option>
-                <option
-                    v-for="option in item.options"
-                    :key="option.id"
-                    :value="option.id"
-                >
-                    {{ option.label }}. {{ optionPlainText(option) }}
-                </option>
-            </select>
+                    <div class="min-w-0 flex-1 pt-1">
+                        <RichContent
+                            v-if="item.prompt"
+                            :content="item.prompt"
+                            compact
+                            class="text-sm font-medium leading-relaxed"
+                        />
+                        <p
+                            v-else
+                            class="text-sm text-muted-foreground italic"
+                        >
+                            Заголовок селекта не заполнен
+                        </p>
+                    </div>
+                </div>
+
+                <div class="w-full">
+                    <label
+                        class="mb-1.5 block text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        :for="`double-select-${question.id}-${item.group}`"
+                    >
+                        Таңдаңыз
+                    </label>
+                    <select
+                        :id="`double-select-${question.id}-${item.group}`"
+                        class="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        :value="selectedForGroup(item.group) ?? ''"
+                        @change="
+                            handleSelect(
+                                item.group,
+                                ($event.target as HTMLSelectElement).value,
+                            )
+                        "
+                    >
+                        <option value="" disabled>
+                            Выберите вариант...
+                        </option>
+                        <option
+                            v-for="option in item.options"
+                            :key="option.id"
+                            :value="option.id"
+                        >
+                            {{ option.label }}. {{ optionPlainText(option) }}
+                        </option>
+                    </select>
+                </div>
+            </div>
         </div>
     </div>
 </template>
