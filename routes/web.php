@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AdminAuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\StudentExamController;
+use App\Http\Controllers\StudentExamHistoryController;
 use App\Http\Controllers\UserDirectionController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('exam', [StudentExamController::class, 'show'])
         ->name('exam.show');
+
+    Route::get('exam/history', [StudentExamHistoryController::class, 'index'])
+        ->name('exam.history');
 
     Route::middleware('direction')->group(function () {
         Route::get('exams/{exam}/take', [ExamAttemptController::class, 'show'])

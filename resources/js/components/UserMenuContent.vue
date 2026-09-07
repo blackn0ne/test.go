@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { Building2, GraduationCap, LogOut } from '@lucide/vue';
+import {
+    Building2,
+    ClipboardList,
+    GraduationCap,
+    LogOut,
+} from '@lucide/vue';
 import { computed, inject } from 'vue';
 import {
     DropdownMenuGroup,
@@ -10,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import UserInfo from '@/components/UserInfo.vue';
 import { logout } from '@/routes';
+import { history as examHistory } from '@/routes/exam';
 import type { User } from '@/types';
 
 type Props = {
@@ -25,6 +31,7 @@ const openDirectionModal = inject<(() => void) | undefined>(
 
 const page = usePage();
 const isAdmin = computed(() => page.props.auth.user?.role === 'admin');
+const isStudent = computed(() => page.props.auth.user?.role === 'user');
 
 const schoolName = computed(() => page.props.auth.user?.school?.name ?? null);
 
@@ -42,42 +49,56 @@ const handleLogout = () => {
     <DropdownMenuSeparator />
     <DropdownMenuGroup v-if="! isAdmin">
         <DropdownMenuItem
-            class="cursor-pointer"
+            class="cursor-pointer rounded-lg"
             @click="openDirectionModal?.()"
         >
-            <GraduationCap class="mr-2 h-4 w-4" />
-            <span class="flex flex-col items-start gap-0.5">
-                <span>Направление</span>
+            <GraduationCap class="mr-2 size-4 shrink-0" />
+            <span class="flex min-w-0 flex-col items-start gap-0.5">
+                <span class="font-medium">Бағыт</span>
                 <span
                     v-if="user.direction"
-                    class="text-xs text-muted-foreground"
+                    class="truncate text-xs text-muted-foreground"
                 >
-                    {{ user.direction.code }} — {{ user.direction.name }}
+                    {{ user.direction.name }}
                 </span>
                 <span v-else class="text-xs text-destructive">
-                    Не выбрано
+                    Таңдалмаған
                 </span>
             </span>
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem class="cursor-default" @select.prevent>
-            <Building2 class="mr-2 h-4 w-4" />
-            <span class="flex flex-col items-start gap-0.5">
-                <span>Мектеп</span>
+
+        <DropdownMenuItem class="cursor-default rounded-lg" @select.prevent>
+            <Building2 class="mr-2 size-4 shrink-0" />
+            <span class="flex min-w-0 flex-col items-start gap-0.5">
+                <span class="font-medium">Мектеп</span>
                 <span
                     v-if="schoolName"
-                    class="text-xs text-muted-foreground"
+                    class="truncate text-xs text-muted-foreground"
                 >
                     {{ schoolName }}
                 </span>
                 <span v-else class="text-xs text-muted-foreground">
-                    Не указано
+                    Көрсетілмеген
                 </span>
             </span>
         </DropdownMenuItem>
+
+        <DropdownMenuItem
+            v-if="isStudent"
+            class="cursor-pointer rounded-lg"
+            :as-child="true"
+        >
+            <Link
+                :href="examHistory()"
+                class="flex w-full items-center"
+            >
+                <ClipboardList class="mr-2 size-4 shrink-0" />
+                <span class="font-medium">Менің сынақтарым</span>
+            </Link>
+        </DropdownMenuItem>
     </DropdownMenuGroup>
     <DropdownMenuSeparator v-if="! isAdmin" />
-    <DropdownMenuItem :as-child="true">
+    <DropdownMenuItem :as-child="true" class="rounded-lg">
         <Link
             class="block w-full cursor-pointer"
             :href="logout()"
@@ -85,8 +106,8 @@ const handleLogout = () => {
             as="button"
             data-test="logout-button"
         >
-            <LogOut class="mr-2 h-4 w-4" />
-            Выйти
+            <LogOut class="mr-2 size-4" />
+            Шығу
         </Link>
     </DropdownMenuItem>
 </template>

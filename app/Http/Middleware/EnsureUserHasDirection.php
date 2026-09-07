@@ -23,6 +23,7 @@ class EnsureUserHasDirection
             'direction.update',
             'logout',
             'exam.show',
+            'exam.history',
         )) {
             return $next($request);
         }

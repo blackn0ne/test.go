@@ -74,3 +74,26 @@ export type ExamResultAttempt = {
     max_score: number | null;
     submitted_at: string | null;
 };
+
+export type ExamHistoryAttempt = {
+    id: number;
+    exam_id: number;
+    exam_title: string;
+    submitted_at: string | null;
+    total_score: number;
+    max_score: number;
+    can_view_result: boolean;
+};
+
+export type PaginatedExamHistory = {
+    data: ExamHistoryAttempt[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    links: Array<{
+        url: string | null;
+        label: string;
+        active: boolean;
+    }>;
+};
