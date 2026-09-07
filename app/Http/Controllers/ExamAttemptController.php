@@ -9,6 +9,7 @@ use App\Http\Requests\Exam\SubmitExamAttemptRequest;
 use App\Http\Resources\Exam\ExamAttemptQuestionResource;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
+use App\Services\Exams\ExamAttemptResultBuilder;
 use App\Services\Exams\ExamAttemptService;
 use App\Support\ExamPeriodFormatter;
 use App\Support\ExamSectionCatalog;
@@ -22,6 +23,7 @@ class ExamAttemptController extends Controller
 {
     public function __construct(
         private readonly ExamAttemptService $attempts,
+        private readonly ExamAttemptResultBuilder $resultBuilder,
     ) {}
 
     public function show(Request $request, Exam $exam): Response|RedirectResponse
@@ -104,10 +106,9 @@ class ExamAttemptController extends Controller
         abort_unless($attempt->user_id === $request->user()->id, 403);
         abort_unless($exam->show_results_after_submit, 403);
 
-        $attempt->load([
-            'snapshotQuestions.options',
-            'answers',
-        ]);
+        abort_unless($attempt->status === ExamAttemptStatus::Submitted, 404);
+
+        $result = $this->resultBuilder->build($attempt);
 
         return Inertia::render('exams/Result', [
             'exam' => [
@@ -121,14 +122,8 @@ class ExamAttemptController extends Controller
                 'max_score' => $attempt->max_score,
                 'submitted_at' => $attempt->submitted_at,
             ],
-            'questions' => ExamAttemptQuestionResource::collection(
-                $attempt->snapshotQuestions,
-            )->resolve(),
-            'answers' => $attempt->answers->map(fn ($answer) => [
-                'exam_attempt_question_id' => $answer->exam_attempt_question_id,
-                'selected_option_ids' => $answer->selected_option_ids,
-                'score_awarded' => $answer->score_awarded,
-            ])->values(),
+            'sections' => $result['sections'],
+            'questions' => $result['questions'],
         ]);
     }
 

@@ -4,6 +4,8 @@ export type ExamSection = {
     subject_id: number | null;
     kind: string;
     question_count?: number;
+    score?: number;
+    max_score?: number;
 };
 
 export type ExamToolId = 'calculator' | 'periodic-table' | 'instructions';
@@ -57,3 +59,18 @@ export type ExamQuestion = {
 };
 
 export const MULTIPLE_MAX_SELECTIONS = 3;
+
+export type ExamResultQuestion = ExamQuestion & {
+    max_score: number;
+    score_awarded: number;
+    selected_option_ids: number[];
+    correct_option_ids: number[];
+};
+
+export type ExamResultAttempt = {
+    id: number;
+    status: string;
+    total_score: number | null;
+    max_score: number | null;
+    submitted_at: string | null;
+};

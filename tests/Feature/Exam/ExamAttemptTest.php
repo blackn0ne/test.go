@@ -338,3 +338,62 @@ test('admin question edit exposes is_correct only in admin context', function ()
             ->has('question.options.0.is_correct')
         );
 });
+
+test('result page exposes correct answers and section scores after submit', function () {
+    $exam = createPublishedExamWithQuestion();
+    $student = createStudentWithDirection();
+    $admin = User::factory()->admin()->create();
+    $promoCode = createPromoCodeForStudent($student, $exam, $admin);
+    $service = app(ExamAttemptService::class);
+
+    $attempt = $service->startOrResume($exam, $student, $promoCode->code);
+    $snapshotQuestion = $attempt->snapshotQuestions->first();
+    $correctSnapshotOption = $snapshotQuestion->options->firstWhere('label', 'B');
+
+    $graded = $service->submit($attempt, [
+        [
+            'exam_attempt_question_id' => $snapshotQuestion->id,
+            'selected_option_ids' => [$correctSnapshotOption->id],
+        ],
+    ]);
+
+    $this->actingAs($student)
+        ->get(route('exams.result', ['exam' => $exam, 'attempt' => $graded]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('exams/Result')
+            ->where('attempt.total_score', 1)
+            ->where('attempt.max_score', 1)
+            ->has('sections', 1)
+            ->where('sections.0.score', 1)
+            ->where('sections.0.max_score', 1)
+            ->has('questions', 1)
+            ->where('questions.0.score_awarded', 1)
+            ->where('questions.0.selected_option_ids', [$correctSnapshotOption->id])
+            ->where('questions.0.correct_option_ids', [$correctSnapshotOption->id])
+            ->missing('questions.0.options.0.is_correct')
+        );
+});
+
+test('submit grades unanswered questions as zero', function () {
+    $exam = createPublishedExamWithQuestion();
+    $student = createStudentWithDirection();
+    $admin = User::factory()->admin()->create();
+    $promoCode = createPromoCodeForStudent($student, $exam, $admin);
+    $service = app(ExamAttemptService::class);
+
+    $attempt = $service->startOrResume($exam, $student, $promoCode->code);
+    $snapshotQuestion = $attempt->snapshotQuestions->first();
+
+    $graded = $service->submit($attempt, [
+        [
+            'exam_attempt_question_id' => $snapshotQuestion->id,
+            'selected_option_ids' => [],
+        ],
+    ]);
+
+    expect((float) $graded->total_score)->toBe(0.0)
+        ->and($graded->answers)->toHaveCount(1)
+        ->and((float) $graded->answers->first()->score_awarded)->toBe(0.0)
+        ->and($graded->answers->first()->selected_option_ids)->toBe([]);
+});

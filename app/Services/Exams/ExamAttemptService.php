@@ -144,23 +144,24 @@ class ExamAttemptService
         return DB::transaction(function () use ($attempt, $answers): ExamAttempt {
             $attempt->load([
                 'snapshotQuestions.options',
+                'answers',
             ]);
 
+            $payloadByQuestionId = collect($answers)->keyBy('exam_attempt_question_id');
             $totalScore = 0.0;
 
-            foreach ($answers as $answerPayload) {
-                $snapshotQuestion = $attempt->snapshotQuestions
-                    ->firstWhere('id', $answerPayload['exam_attempt_question_id']);
+            foreach ($attempt->snapshotQuestions as $snapshotQuestion) {
+                $payload = $payloadByQuestionId->get($snapshotQuestion->id);
+                $savedAnswer = $attempt->answers
+                    ->firstWhere('exam_attempt_question_id', $snapshotQuestion->id);
 
-                if ($snapshotQuestion === null) {
-                    continue;
-                }
-
-                $selectedOptionIds = collect($answerPayload['selected_option_ids'])
-                    ->map(fn ($id) => (int) $id)
-                    ->unique()
-                    ->values()
-                    ->all();
+                $selectedOptionIds = $payload !== null
+                    ? collect($payload['selected_option_ids'])
+                        ->map(fn ($id) => (int) $id)
+                        ->unique()
+                        ->values()
+                        ->all()
+                    : ($savedAnswer?->selected_option_ids ?? []);
 
                 $this->assertSelectedOptionsBelongToQuestion(
                     $snapshotQuestion,
