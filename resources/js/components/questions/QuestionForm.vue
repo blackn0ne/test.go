@@ -102,6 +102,8 @@ watch(
 watch(
     () => [
         props.form.body,
+        props.form.double_first_prompt,
+        props.form.double_second_prompt,
         props.form.options,
         props.form.subject_id,
         props.form.context_mode,
@@ -137,7 +139,11 @@ function setGroupCorrect(
 }
 
 function groupTitle(group: 'first' | 'second'): string {
-    return group === 'first' ? 'Строки (заголовки)' : 'Варианты для селекта';
+    return group === 'first' ? 'Селект 1' : 'Селект 2';
+}
+
+function groupPromptField(group: 'first' | 'second'): 'double_first_prompt' | 'double_second_prompt' {
+    return group === 'first' ? 'double_first_prompt' : 'double_second_prompt';
 }
 
 function toggleMultipleCorrect(label: OptionLabel, checked: boolean): void {
@@ -422,13 +428,20 @@ defineExpose({
                             {{ groupTitle(group) }}
                         </h2>
                         <span class="text-xs text-muted-foreground">
-                            {{
-                                group === 'first'
-                                    ? 'Текст строки + правильный ответ'
-                                    : 'A–D для выпадающего списка'
-                            }}
+                            Заголовок + варианты A–D
                         </span>
                     </div>
+                </div>
+
+                <div class="space-y-3 border-b px-4 py-3">
+                    <Label class="text-xs text-muted-foreground">
+                        Заголовок селекта
+                    </Label>
+                    <RichEditor
+                        v-model="form[groupPromptField(group)]"
+                        placeholder="Текст перед выпадающим списком..."
+                    />
+                    <InputError :message="mergedErrors[groupPromptField(group)]" />
                 </div>
 
                 <div class="divide-y">
@@ -450,7 +463,6 @@ defineExpose({
 
                         <label class="flex shrink-0 cursor-pointer items-center">
                             <input
-                                v-if="group === 'second'"
                                 type="radio"
                                 :name="`${group}_correct`"
                                 class="size-3.5 accent-primary"
@@ -459,28 +471,6 @@ defineExpose({
                                     setGroupCorrect(group, option.label)
                                 "
                             />
-                            <select
-                                v-else
-                                :value="option.match_label ?? ''"
-                                class="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                                @change="
-                                    option.match_label = (
-                                        ($event.target as HTMLSelectElement)
-                                            .value as typeof option.match_label
-                                    )
-                                "
-                            >
-                                <option value="" disabled>
-                                    Ответ
-                                </option>
-                                <option
-                                    v-for="label in ['A', 'B', 'C', 'D']"
-                                    :key="label"
-                                    :value="label"
-                                >
-                                    {{ label }}
-                                </option>
-                            </select>
                         </label>
 
                         <div class="min-w-0 flex-1">

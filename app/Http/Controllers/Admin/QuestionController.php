@@ -83,6 +83,8 @@ class QuestionController extends Controller
                     'subject_id',
                     'type',
                     'body',
+                    'double_first_prompt',
+                    'double_second_prompt',
                 ]),
                 'question_context_id' => $contextId,
             ]);
@@ -121,6 +123,8 @@ class QuestionController extends Controller
                 ...$request->safe()->only([
                     'subject_id',
                     'body',
+                    'double_first_prompt',
+                    'double_second_prompt',
                 ]),
                 'question_context_id' => $contextId,
             ]);

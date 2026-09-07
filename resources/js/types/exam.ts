@@ -39,6 +39,8 @@ export type ExamQuestion = {
     question_id: number;
     type: 'single' | 'multiple' | 'double';
     body: string;
+    double_first_prompt: string | null;
+    double_second_prompt: string | null;
     sort_order: number;
     subject_id: number | null;
     subject_name: string | null;

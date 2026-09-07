@@ -51,7 +51,6 @@ const { formatted, isUrgent } = useExamTimer({
 });
 
 const selections = ref<Record<number, number[]>>({});
-const doubleRowSelections = ref<Record<number, Record<number, number>>>({});
 
 const visibleQuestions = computed(() =>
     props.questions.filter(
@@ -110,60 +109,64 @@ function shouldShowContext(question: ExamQuestion): boolean {
     );
 }
 
+function optionsForGroup(
+    question: ExamQuestion,
+    group: 'first' | 'second',
+) {
+    return question.options.filter(
+        (option) => option.select_group === group,
+    );
+}
+
+function selectedForDoubleGroup(
+    questionId: number,
+    group: 'first' | 'second',
+): number | null {
+    const question = props.questions.find((item) => item.id === questionId);
+
+    if (! question) {
+        return null;
+    }
+
+    const groupOptionIds = optionsForGroup(question, group).map(
+        (option) => option.id,
+    );
+
+    return (
+        (selections.value[questionId] ?? []).find((optionId) =>
+            groupOptionIds.includes(optionId),
+        ) ?? null
+    );
+}
+
+function selectDoubleGroup(
+    question: ExamQuestion,
+    group: 'first' | 'second',
+    optionId: number | null,
+): void {
+    const groupOptionIds = optionsForGroup(question, group).map(
+        (option) => option.id,
+    );
+    const current = (selections.value[question.id] ?? []).filter(
+        (id) => ! groupOptionIds.includes(id),
+    );
+
+    if (optionId !== null) {
+        current.push(optionId);
+    }
+
+    selections.value[question.id] = current;
+}
+
 function isQuestionAnswered(question: ExamQuestion): boolean {
     if (question.type === 'double') {
-        const firstOptions = firstGroupOptions(question);
-
-        if (firstOptions.length === 0) {
-            return false;
-        }
-
-        const rowSelections = doubleRowSelections.value[question.id] ?? {};
-
-        return firstOptions.every(
-            (option) => rowSelections[option.id] !== undefined,
+        return (
+            selectedForDoubleGroup(question.id, 'first') !== null
+            && selectedForDoubleGroup(question.id, 'second') !== null
         );
     }
 
     return (selections.value[question.id] ?? []).length > 0;
-}
-
-function firstGroupOptions(question: ExamQuestion) {
-    return question.options
-        .filter((option) => option.select_group === 'first')
-        .sort((left, right) => left.sort_order - right.sort_order);
-}
-
-function syncDoubleSelections(question: ExamQuestion): void {
-    const rowSelections = doubleRowSelections.value[question.id] ?? {};
-
-    selections.value[question.id] = firstGroupOptions(question)
-        .map((option) => rowSelections[option.id])
-        .filter((optionId): optionId is number => optionId !== undefined);
-}
-
-function selectedForDoubleRow(
-    questionId: number,
-    firstOptionId: number,
-): number | null {
-    return doubleRowSelections.value[questionId]?.[firstOptionId] ?? null;
-}
-
-function selectDoubleRow(
-    question: ExamQuestion,
-    firstOptionId: number,
-    secondOptionId: number | null,
-): void {
-    const current = { ...(doubleRowSelections.value[question.id] ?? {}) };
-
-    if (secondOptionId === null) {
-        delete current[firstOptionId];
-    } else {
-        current[firstOptionId] = secondOptionId;
-    }
-
-    doubleRowSelections.value[question.id] = current;
-    syncDoubleSelections(question);
 }
 
 function isQuestionAnsweredById(questionId: number): boolean {
@@ -336,7 +339,7 @@ function buildAnswersPayload(): Array<{
                                     />
                                     {{
                                         activeQuestion.type === 'double'
-                                            ? 'Сопоставьте каждую строку с вариантом из списка'
+                                            ? 'Выберите ответ в каждом селекте'
                                             : 'Жауап нұсқасын таңдаңыз'
                                     }}
                                 </p>
@@ -344,19 +347,19 @@ function buildAnswersPayload(): Array<{
                                 <ExamDoubleSelectOptions
                                     v-if="activeQuestion.type === 'double'"
                                     :question="activeQuestion"
-                                    :selected-for-row="
-                                        (firstOptionId) =>
-                                            selectedForDoubleRow(
+                                    :selected-for-group="
+                                        (group) =>
+                                            selectedForDoubleGroup(
                                                 activeQuestion!.id,
-                                                firstOptionId,
+                                                group,
                                             )
                                     "
-                                    @select-row="
-                                        (firstOptionId, secondOptionId) =>
-                                            selectDoubleRow(
+                                    @select-group="
+                                        (group, optionId) =>
+                                            selectDoubleGroup(
                                                 activeQuestion!,
-                                                firstOptionId,
-                                                secondOptionId,
+                                                group,
+                                                optionId,
                                             )
                                     "
                                 />

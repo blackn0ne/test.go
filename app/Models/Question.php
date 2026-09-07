@@ -17,6 +17,8 @@ use Illuminate\Support\Carbon;
  * @property int $subject_id
  * @property QuestionType $type
  * @property string $body
+ * @property string|null $double_first_prompt
+ * @property string|null $double_second_prompt
  * @property array<string, mixed>|null $answer_key
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -38,6 +40,8 @@ class Question extends Model
         'question_context_id',
         'type',
         'body',
+        'double_first_prompt',
+        'double_second_prompt',
         'answer_key',
     ];
 

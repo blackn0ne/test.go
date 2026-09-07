@@ -21,6 +21,8 @@ class AdminQuestionResource extends JsonResource
             'type' => $this->type->value,
             'type_label' => $this->type->label(),
             'body' => $this->body,
+            'double_first_prompt' => $this->double_first_prompt,
+            'double_second_prompt' => $this->double_second_prompt,
             'subject' => $this->when(
                 $this->relationLoaded('subject'),
                 fn () => $this->subject->only(['id', 'name']),

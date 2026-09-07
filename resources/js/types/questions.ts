@@ -19,6 +19,8 @@ export type QuestionFormData = {
     subject_id: number | '';
     type: QuestionTypeValue;
     body: string;
+    double_first_prompt: string;
+    double_second_prompt: string;
     context_mode: QuestionContextMode;
     context_id: number | '';
     context_title: string;
@@ -96,6 +98,8 @@ export function emptyQuestionForm(): QuestionFormData {
         subject_id: '',
         type: 'single',
         body: '',
+        double_first_prompt: '',
+        double_second_prompt: '',
         context_mode: 'none',
         context_id: '',
         context_title: '',
@@ -153,13 +157,25 @@ export function validateQuestionForm(
     }
 
     if (form.type === 'double') {
-        const firstOptions = form.options.filter(
-            (option) => option.select_group === 'first',
-        );
+        const firstCorrect = form.options.filter(
+            (option) => option.select_group === 'first' && option.is_correct,
+        ).length;
 
-        if (firstOptions.some((option) => ! option.match_label)) {
+        const secondCorrect = form.options.filter(
+            (option) => option.select_group === 'second' && option.is_correct,
+        ).length;
+
+        if (firstCorrect !== 1 || secondCorrect !== 1) {
             errors.options =
-                'Для каждой строки укажите правильный ответ из второго селекта.';
+                'В каждом селекте отметьте один правильный вариант.';
+        }
+
+        if (! hasMeaningfulHtml(form.double_first_prompt)) {
+            errors.double_first_prompt = 'Заполните заголовок первого селекта.';
+        }
+
+        if (! hasMeaningfulHtml(form.double_second_prompt)) {
+            errors.double_second_prompt = 'Заполните заголовок второго селекта.';
         }
     }
 
@@ -177,6 +193,8 @@ export function questionFormFromQuestion(question: {
     subject_id: number;
     type: QuestionTypeValue;
     body: string;
+    double_first_prompt?: string | null;
+    double_second_prompt?: string | null;
     options: QuestionOptionForm[];
     context?: {
         id: number;
@@ -188,6 +206,8 @@ export function questionFormFromQuestion(question: {
         subject_id: question.subject_id,
         type: question.type,
         body: question.body,
+        double_first_prompt: question.double_first_prompt ?? '',
+        double_second_prompt: question.double_second_prompt ?? '',
         context_mode: question.context ? 'existing' : 'none',
         context_id: question.context?.id ?? '',
         context_title: question.context?.title ?? '',

@@ -29,6 +29,8 @@ type SheetQuestion = {
     type: QuestionTypeValue;
     type_label: string;
     body: string;
+    double_first_prompt?: string | null;
+    double_second_prompt?: string | null;
     subject?: {
         id: number;
         name: string;

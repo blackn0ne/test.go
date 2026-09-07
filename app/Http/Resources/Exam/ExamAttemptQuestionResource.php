@@ -19,6 +19,8 @@ class ExamAttemptQuestionResource extends JsonResource
             'question_id' => $this->question_id,
             'type' => $this->type->value,
             'body' => $this->body,
+            'double_first_prompt' => $this->double_first_prompt,
+            'double_second_prompt' => $this->double_second_prompt,
             'sort_order' => $this->sort_order,
             'subject_id' => $this->subject_id,
             'subject_name' => $this->subject_name,

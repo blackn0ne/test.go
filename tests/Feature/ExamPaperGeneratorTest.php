@@ -54,13 +54,17 @@ function createQuestionWithOptions(Subject $subject, QuestionType $type, ?Questi
     }
 
     if ($type === QuestionType::Double) {
+        $question->update([
+            'double_first_prompt' => '<p>First select prompt</p>',
+            'double_second_prompt' => '<p>Second select prompt</p>',
+        ]);
+
         foreach (['A', 'B', 'C', 'D'] as $index => $label) {
             QuestionOption::factory()->create([
                 'question_id' => $question->id,
                 'select_group' => 'first',
                 'label' => $label,
-                'is_correct' => false,
-                'match_label' => $label,
+                'is_correct' => $label === 'A',
                 'sort_order' => $index,
             ]);
         }
@@ -70,7 +74,7 @@ function createQuestionWithOptions(Subject $subject, QuestionType $type, ?Questi
                 'question_id' => $question->id,
                 'select_group' => 'second',
                 'label' => $label,
-                'is_correct' => false,
+                'is_correct' => $label === 'B',
                 'sort_order' => $index + 4,
             ]);
         }

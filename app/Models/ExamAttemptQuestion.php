@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $question_id
  * @property QuestionType $type
  * @property string $body
+ * @property string|null $double_first_prompt
+ * @property string|null $double_second_prompt
  * @property int $sort_order
  * @property-read ExamAttempt $attempt
  * @property-read Question $sourceQuestion
@@ -33,6 +35,8 @@ class ExamAttemptQuestion extends Model
         'section_order',
         'type',
         'body',
+        'double_first_prompt',
+        'double_second_prompt',
         'context_title',
         'context_body',
         'sort_order',

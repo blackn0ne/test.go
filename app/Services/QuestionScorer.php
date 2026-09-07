@@ -86,13 +86,6 @@ class QuestionScorer
      */
     private function scoreDoubleFromKey(array $answerKey, array $selectedOptionIds): float
     {
-        /** @var array<int, array{first_id: int, second_id: int}> $rows */
-        $rows = $answerKey['rows'] ?? [];
-
-        if ($rows !== []) {
-            return $this->scoreDoubleRows($rows, $selectedOptionIds);
-        }
-
         /** @var array{first?: int|null, second?: int|null} $groups */
         $groups = $answerKey['groups'] ?? [];
         $firstCorrectId = isset($groups['first']) ? (int) $groups['first'] : null;
@@ -110,37 +103,6 @@ class QuestionScorer
         return match (true) {
             $firstCorrect && $secondCorrect => 2,
             $firstCorrect || $secondCorrect => 1,
-            default => 0,
-        };
-    }
-
-    /**
-     * @param  array<int, array{first_id: int, second_id: int}>  $rows
-     * @param  array<int|string>  $selectedOptionIds
-     */
-    private function scoreDoubleRows(array $rows, array $selectedOptionIds): float
-    {
-        $selectedIds = collect($selectedOptionIds)
-            ->map(fn ($id) => (int) $id)
-            ->values();
-
-        if ($selectedIds->isEmpty()) {
-            return 0;
-        }
-
-        $correctCount = 0;
-
-        foreach ($rows as $index => $row) {
-            if (($selectedIds[$index] ?? null) === (int) $row['second_id']) {
-                $correctCount++;
-            }
-        }
-
-        $totalRows = count($rows);
-
-        return match (true) {
-            $correctCount === $totalRows => 2,
-            $correctCount >= (int) ceil($totalRows / 2) => 1,
             default => 0,
         };
     }
@@ -202,38 +164,6 @@ class QuestionScorer
         }
 
         $selectedIds = collect($selectedOptionIds)->map(fn ($id) => (int) $id);
-
-        $firstOptions = $question->options
-            ->where('select_group', 'first')
-            ->sortBy('sort_order')
-            ->values();
-
-        $secondOptions = $question->options
-            ->where('select_group', 'second')
-            ->sortBy('sort_order')
-            ->values();
-
-        $rows = $firstOptions
-            ->map(function ($firstOption) use ($secondOptions): ?array {
-                $matchLabel = $firstOption->match_label ?? $firstOption->label;
-                $secondOption = $secondOptions->firstWhere('label', $matchLabel);
-
-                if ($secondOption === null) {
-                    return null;
-                }
-
-                return [
-                    'first_id' => (int) $firstOption->id,
-                    'second_id' => (int) $secondOption->id,
-                ];
-            })
-            ->filter()
-            ->values()
-            ->all();
-
-        if ($rows !== []) {
-            return $this->scoreDoubleRows($rows, $selectedOptionIds);
-        }
 
         $firstCorrectId = $question->options
             ->where('select_group', 'first')

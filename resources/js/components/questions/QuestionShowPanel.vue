@@ -11,6 +11,8 @@ type QuestionDetail = {
     type: QuestionTypeValue;
     type_label: string;
     body: string;
+    double_first_prompt?: string | null;
+    double_second_prompt?: string | null;
     subject?: {
         id: number;
         name: string;
@@ -34,7 +36,13 @@ function optionsForGroup(group: 'first' | 'second' | null) {
 }
 
 function groupTitle(group: 'first' | 'second'): string {
-    return group === 'first' ? 'Строки (заголовки)' : 'Варианты для селекта';
+    return group === 'first' ? 'Селект 1' : 'Селект 2';
+}
+
+function groupPrompt(group: 'first' | 'second'): string | null | undefined {
+    return group === 'first'
+        ? props.question.double_first_prompt
+        : props.question.double_second_prompt;
 }
 </script>
 
@@ -116,6 +124,11 @@ function groupTitle(group: 'first' | 'second'): string {
                     <h3 class="text-sm font-semibold">
                         {{ groupTitle(group) }}
                     </h3>
+                    <RichContent
+                        v-if="groupPrompt(group)"
+                        :content="groupPrompt(group) ?? ''"
+                        class="mt-2 text-sm text-muted-foreground"
+                    />
                 </div>
                 <div class="divide-y">
                     <div

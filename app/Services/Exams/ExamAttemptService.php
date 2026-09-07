@@ -243,6 +243,8 @@ class ExamAttemptService
             'section_order' => $sectionOrder,
             'type' => $question->type,
             'body' => $question->body,
+            'double_first_prompt' => $question->double_first_prompt,
+            'double_second_prompt' => $question->double_second_prompt,
             'context_title' => $context?->title,
             'context_body' => $context?->body,
             'sort_order' => $sortOrder,
