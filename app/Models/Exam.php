@@ -167,4 +167,19 @@ class Exam extends Model
 
         return true;
     }
+
+    public function periodDate(): Carbon
+    {
+        return $this->starts_at ?? now();
+    }
+
+    public function periodYear(): int
+    {
+        return (int) $this->periodDate()->year;
+    }
+
+    public function periodMonth(): int
+    {
+        return (int) $this->periodDate()->month;
+    }
 }

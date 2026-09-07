@@ -83,33 +83,6 @@ class PromoCodeBatchService
             return;
         }
 
-        if ($student->school_id === null) {
-            throw ValidationException::withMessages([
-                'promo_code' => 'Студент не привязан к школе.',
-            ]);
-        }
-
-        if ($promoCode->school_id !== $student->school_id) {
-            throw ValidationException::withMessages([
-                'promo_code' => 'Промокод не относится к вашей школе.',
-            ]);
-        }
-
-        if ($promoCode->isRedeemed()) {
-            throw ValidationException::withMessages([
-                'promo_code' => 'Этот промокод уже был использован. Запросите новый у школы.',
-            ]);
-        }
-
-        $examYear = (int) $exam->starts_at?->year;
-        $examMonth = (int) $exam->starts_at?->month;
-
-        if ($promoCode->year !== $examYear || $promoCode->month !== $examMonth) {
-            throw ValidationException::withMessages([
-                'promo_code' => 'Промокод истёк или не подходит к этому экзамену.',
-            ]);
-        }
-
         $promoCode->update([
             'user_id' => $student->id,
             'exam_attempt_id' => $attemptId,
@@ -129,6 +102,50 @@ class PromoCodeBatchService
             ]);
         }
 
+        if (! $student->isStudent()) {
+            return $promoCode;
+        }
+
+        if ($student->school_id === null) {
+            throw ValidationException::withMessages([
+                'promo_code' => 'Студент не привязан к школе.',
+            ]);
+        }
+
+        if ($promoCode->school_id !== $student->school_id) {
+            throw ValidationException::withMessages([
+                'promo_code' => 'Промокод не относится к вашей школе.',
+            ]);
+        }
+
+        if ($promoCode->isRedeemed()) {
+            throw ValidationException::withMessages([
+                'promo_code' => 'Этот промокод уже был использован. Запросите новый у школы.',
+            ]);
+        }
+
+        if (
+            $promoCode->year !== $exam->periodYear()
+            || $promoCode->month !== $exam->periodMonth()
+        ) {
+            throw ValidationException::withMessages([
+                'promo_code' => sprintf(
+                    'Промокод действителен для %s, а экзамен проводится в %s.',
+                    $this->formatPeriod($promoCode->year, $promoCode->month),
+                    $this->formatPeriod($exam->periodYear(), $exam->periodMonth()),
+                ),
+            ]);
+        }
+
         return $promoCode;
+    }
+
+    private function formatPeriod(int $year, int $month): string
+    {
+        return mb_convert_case(
+            now()->setYear($year)->setMonth($month)->startOfMonth()->translatedFormat('F Y'),
+            MB_CASE_TITLE,
+            'UTF-8',
+        );
     }
 }

@@ -64,6 +64,8 @@ function resolveErrorTitle(message: string | undefined): string {
         message.includes('истёк')
         || message.includes('не подходит')
         || message.includes('не действителен')
+        || message.includes('действителен для')
+        || message.includes('проводится в')
     ) {
         return 'Промокод недействителен';
     }
@@ -80,6 +82,14 @@ function resolveErrorTitle(message: string | undefined): string {
     }
 
     return 'Не удалось активировать промокод';
+}
+
+function firstError(error: string | string[] | undefined): string | undefined {
+    if (! error) {
+        return undefined;
+    }
+
+    return Array.isArray(error) ? error[0] : error;
 }
 
 function handleFormError(): void {
@@ -155,7 +165,7 @@ function handleFormError(): void {
                 </div>
 
                 <div
-                    v-if="errors.promo_code && hasError"
+                    v-if="firstError(errors.promo_code)"
                     class="flex items-start gap-3 rounded-2xl border border-destructive/25 bg-destructive/5 px-4 py-3"
                     role="alert"
                 >
@@ -164,10 +174,14 @@ function handleFormError(): void {
                     />
                     <div class="space-y-1 text-sm">
                         <p class="font-semibold text-destructive">
-                            {{ resolveErrorTitle(errors.promo_code) }}
+                            {{
+                                resolveErrorTitle(
+                                    firstError(errors.promo_code),
+                                )
+                            }}
                         </p>
                         <p class="text-destructive/80">
-                            {{ errors.promo_code }}
+                            {{ firstError(errors.promo_code) }}
                         </p>
                     </div>
                 </div>
