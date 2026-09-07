@@ -111,6 +111,56 @@ test('student needs valid promo code to start exam', function () {
         ->assertRedirect(route('exams.take', $exam));
 });
 
+test('student cannot start exam with already used promo code', function () {
+    $school = User::factory()->school()->create();
+    $direction = Direction::query()->create([
+        'code' => 'FIZ-MAT',
+        'name' => 'Физика + Математика',
+    ]);
+    $student = User::factory()->withDirection($direction)->create([
+        'school_id' => $school->id,
+    ]);
+    $otherStudent = User::factory()->withDirection($direction)->create([
+        'school_id' => $school->id,
+    ]);
+
+    $admin = User::factory()->admin()->create();
+    $subject = Subject::factory()->create();
+    $exam = Exam::factory()->create([
+        'subject_id' => $subject->id,
+        'created_by' => $admin->id,
+        'status' => ExamStatus::Published,
+        'starts_at' => now()->setYear(2026)->setMonth(3)->startOfMonth(),
+        'ends_at' => now()->setYear(2026)->setMonth(3)->endOfMonth(),
+    ]);
+
+    $batch = PromoCodeBatch::query()->create([
+        'school_id' => $school->id,
+        'year' => 2026,
+        'month' => 3,
+        'coupons_per_student' => 1,
+        'students_count' => 2,
+        'total_codes' => 1,
+        'created_by' => $admin->id,
+    ]);
+
+    $promoCode = PromoCode::query()->create([
+        'promo_code_batch_id' => $batch->id,
+        'school_id' => $school->id,
+        'year' => 2026,
+        'month' => 3,
+        'code' => 'A1B2C',
+        'user_id' => $otherStudent->id,
+        'redeemed_at' => now(),
+    ]);
+
+    $this->actingAs($student)
+        ->post(route('exams.start', $exam), ['promo_code' => $promoCode->code])
+        ->assertSessionHasErrors([
+            'promo_code' => 'Этот промокод уже был использован. Запросите новый у школы.',
+        ]);
+});
+
 test('cannot generate promo codes when school has no students', function () {
     $admin = User::factory()->admin()->create();
     $school = User::factory()->school()->create();

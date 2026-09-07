@@ -97,7 +97,7 @@ class PromoCodeBatchService
 
         if ($promoCode->isRedeemed()) {
             throw ValidationException::withMessages([
-                'promo_code' => 'Промокод уже использован.',
+                'promo_code' => 'Этот промокод уже был использован. Запросите новый у школы.',
             ]);
         }
 
@@ -106,7 +106,7 @@ class PromoCodeBatchService
 
         if ($promoCode->year !== $examYear || $promoCode->month !== $examMonth) {
             throw ValidationException::withMessages([
-                'promo_code' => 'Промокод не действителен для этого экзамена.',
+                'promo_code' => 'Промокод истёк или не подходит к этому экзамену.',
             ]);
         }
 
@@ -125,7 +125,7 @@ class PromoCodeBatchService
 
         if ($promoCode === null) {
             throw ValidationException::withMessages([
-                'promo_code' => 'Промокод не найден.',
+                'promo_code' => 'Такой промокод не существует. Проверьте код и попробуйте снова.',
             ]);
         }
 
