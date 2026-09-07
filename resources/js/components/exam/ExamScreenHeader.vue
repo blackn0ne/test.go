@@ -58,7 +58,7 @@ const openDirectionModal = inject<(() => void) | undefined>(
 
         <div v-if="showTimer && timer" class="flex items-center gap-2">
             <div
-                class="flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold tabular-nums shadow-sm"
+                class="flex h-9 items-center gap-2 rounded-xl border px-3 text-sm font-semibold tabular-nums shadow-sm"
                 :class="
                     cn(
                         timerUrgent
@@ -80,8 +80,7 @@ const openDirectionModal = inject<(() => void) | undefined>(
                 type="submit"
                 :form="finishFormId"
                 variant="destructive"
-                size="sm"
-                class="gap-1.5 rounded-full px-3 shadow-sm"
+                class="h-9 gap-1.5 rounded-xl px-3 text-sm shadow-sm"
                 data-test="exam-finish-button"
             >
                 <Flag class="size-4" />
@@ -93,16 +92,15 @@ const openDirectionModal = inject<(() => void) | undefined>(
             v-if="user"
             type="button"
             variant="outline"
-            size="sm"
-            class="shrink-0 rounded-full"
+            class="h-9 shrink-0 rounded-xl px-3 text-sm"
             data-test="direction-header-button"
             @click="openDirectionModal?.()"
         >
-            <GraduationCap class="size-4" />
+            <GraduationCap class="size-4 shrink-0" />
             <span class="max-w-[10rem] truncate md:max-w-[12rem]">
                 {{
                     user.direction
-                        ? `${user.direction.code} — ${user.direction.name}`
+                        ? user.direction.name
                         : 'Выбрать направление'
                 }}
             </span>
