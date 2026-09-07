@@ -183,13 +183,16 @@ function doubleGroupState(group: 'first' | 'second'): 'correct' | 'wrong' | 'una
                     class="space-y-2 rounded-xl border border-border/60 bg-background/70 p-3"
                 >
                     <div class="flex items-center justify-between gap-2">
-                        <p class="text-sm font-semibold">
-                            {{
-                                group === 'first'
-                                    ? question.double_first_prompt
-                                    : question.double_second_prompt
-                            }}
-                        </p>
+                        <div class="min-w-0 flex-1 text-sm font-semibold">
+                            <RichContent
+                                :content="
+                                    (group === 'first'
+                                        ? question.double_first_prompt
+                                        : question.double_second_prompt) ?? ''
+                                "
+                                compact
+                            />
+                        </div>
                         <span
                             :class="
                                 cn(
