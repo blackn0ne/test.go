@@ -34,7 +34,7 @@ function optionsForGroup(group: 'first' | 'second' | null) {
 }
 
 function groupTitle(group: 'first' | 'second'): string {
-    return group === 'first' ? 'Селект 1' : 'Селект 2';
+    return group === 'first' ? 'Строки (заголовки)' : 'Варианты для селекта';
 }
 </script>
 

@@ -11,6 +11,7 @@ export type QuestionOptionForm = {
     content: string;
     is_correct: boolean;
     select_group: 'first' | 'second' | null;
+    match_label: OptionLabelSingle | null;
     sort_order: number;
 };
 
@@ -55,6 +56,7 @@ export function buildDefaultOptions(
                 content: '',
                 is_correct: false,
                 select_group: 'first' as const,
+                match_label: null,
                 sort_order: index,
             })),
             ...singleLabels.map((label, index) => ({
@@ -62,6 +64,7 @@ export function buildDefaultOptions(
                 content: '',
                 is_correct: false,
                 select_group: 'second' as const,
+                match_label: null,
                 sort_order: index + 4,
             })),
         ];
@@ -73,6 +76,7 @@ export function buildDefaultOptions(
             content: '',
             is_correct: false,
             select_group: null,
+            match_label: null,
             sort_order: index,
         }));
     }
@@ -82,6 +86,7 @@ export function buildDefaultOptions(
         content: '',
         is_correct: false,
         select_group: null,
+        match_label: null,
         sort_order: index,
     }));
 }
@@ -148,15 +153,13 @@ export function validateQuestionForm(
     }
 
     if (form.type === 'double') {
-        for (const group of ['first', 'second'] as const) {
-            const groupCorrect = form.options.filter(
-                (option) => option.select_group === group && option.is_correct,
-            ).length;
+        const firstOptions = form.options.filter(
+            (option) => option.select_group === 'first',
+        );
 
-            if (groupCorrect !== 1) {
-                errors.options = `В ${group === 'first' ? 'первом' : 'втором'} селекте выберите один правильный ответ.`;
-                break;
-            }
+        if (firstOptions.some((option) => ! option.match_label)) {
+            errors.options =
+                'Для каждой строки укажите правильный ответ из второго селекта.';
         }
     }
 

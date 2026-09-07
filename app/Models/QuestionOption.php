@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $question_id
  * @property string|null $select_group
+ * @property string|null $match_label
  * @property string $label
  * @property string $content
  * @property bool $is_correct
@@ -31,6 +32,7 @@ class QuestionOption extends Model
     protected $fillable = [
         'question_id',
         'select_group',
+        'match_label',
         'label',
         'content',
         'is_correct',

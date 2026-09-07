@@ -54,16 +54,25 @@ function createQuestionWithOptions(Subject $subject, QuestionType $type, ?Questi
     }
 
     if ($type === QuestionType::Double) {
-        foreach (['first', 'second'] as $group) {
-            foreach (['A', 'B', 'C', 'D'] as $index => $label) {
-                QuestionOption::factory()->create([
-                    'question_id' => $question->id,
-                    'select_group' => $group,
-                    'label' => $label,
-                    'is_correct' => $label === 'A',
-                    'sort_order' => $index,
-                ]);
-            }
+        foreach (['A', 'B', 'C', 'D'] as $index => $label) {
+            QuestionOption::factory()->create([
+                'question_id' => $question->id,
+                'select_group' => 'first',
+                'label' => $label,
+                'is_correct' => false,
+                'match_label' => $label,
+                'sort_order' => $index,
+            ]);
+        }
+
+        foreach (['A', 'B', 'C', 'D'] as $index => $label) {
+            QuestionOption::factory()->create([
+                'question_id' => $question->id,
+                'select_group' => 'second',
+                'label' => $label,
+                'is_correct' => false,
+                'sort_order' => $index + 4,
+            ]);
         }
     }
 

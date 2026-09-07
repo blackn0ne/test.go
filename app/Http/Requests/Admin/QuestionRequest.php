@@ -45,6 +45,7 @@ abstract class QuestionRequest extends FormRequest
             ],
             'options.*.is_correct' => ['required', 'boolean'],
             'options.*.select_group' => ['nullable', 'string', Rule::in(['first', 'second'])],
+            'options.*.match_label' => ['nullable', 'string', Rule::in(['A', 'B', 'C', 'D'])],
             'options.*.sort_order' => ['nullable', 'integer', 'min:0', 'max:255'],
         ];
     }
@@ -137,9 +138,23 @@ abstract class QuestionRequest extends FormRequest
 
                 return;
             }
+        }
 
-            if ($groupOptions->where('is_correct', true)->count() !== 1) {
-                $validator->errors()->add('options', "В группе {$group} выберите один правильный вариант.");
+        $firstOptions = collect($options)->where('select_group', 'first');
+
+        if ($firstOptions->contains(fn (array $option): bool => empty($option['match_label']))) {
+            $validator->errors()->add('options', 'Для каждой строки укажите правильный ответ из второго селекта.');
+        }
+
+        $secondOptions = collect($options)->where('select_group', 'second');
+
+        if ($secondOptions->where('is_correct', true)->count() > 0) {
+            if ($secondOptions->where('is_correct', true)->count() !== 1) {
+                $validator->errors()->add('options', 'В legacy-режиме в втором селекте выберите один правильный ответ.');
+            }
+
+            if ($firstOptions->where('is_correct', true)->count() !== 1) {
+                $validator->errors()->add('options', 'В legacy-режиме в первом селекте выберите один правильный ответ.');
             }
         }
     }

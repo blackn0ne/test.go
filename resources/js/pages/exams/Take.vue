@@ -9,6 +9,7 @@ import {
 import { computed, ref, watch } from 'vue';
 import ExamAttemptController from '@/actions/App/Http/Controllers/ExamAttemptController';
 import ExamAnswerOptions from '@/components/exam/ExamAnswerOptions.vue';
+import ExamDoubleSelectOptions from '@/components/exam/ExamDoubleSelectOptions.vue';
 import ExamQuestionNavigator from '@/components/exam/ExamQuestionNavigator.vue';
 import InputError from '@/components/InputError.vue';
 import RichContent from '@/components/RichContent.vue';
@@ -50,6 +51,7 @@ const { formatted, isUrgent } = useExamTimer({
 });
 
 const selections = ref<Record<number, number[]>>({});
+const doubleRowSelections = ref<Record<number, Record<number, number>>>({});
 
 const visibleQuestions = computed(() =>
     props.questions.filter(
@@ -69,16 +71,15 @@ const activeSectionName = computed(
 
 const answeredInSection = computed(
     () =>
-        visibleQuestions.value.filter(
-            (question) => (selections.value[question.id] ?? []).length > 0,
+        visibleQuestions.value.filter((question) =>
+            isQuestionAnswered(question),
         ).length,
 );
 
 const totalAnswered = computed(
     () =>
-        props.questions.filter(
-            (question) => (selections.value[question.id] ?? []).length > 0,
-        ).length,
+        props.questions.filter((question) => isQuestionAnswered(question))
+            .length,
 );
 
 watch(activeSection, () => {
@@ -109,8 +110,70 @@ function shouldShowContext(question: ExamQuestion): boolean {
     );
 }
 
-function isQuestionAnswered(questionId: number): boolean {
-    return (selections.value[questionId] ?? []).length > 0;
+function isQuestionAnswered(question: ExamQuestion): boolean {
+    if (question.type === 'double') {
+        const firstOptions = firstGroupOptions(question);
+
+        if (firstOptions.length === 0) {
+            return false;
+        }
+
+        const rowSelections = doubleRowSelections.value[question.id] ?? {};
+
+        return firstOptions.every(
+            (option) => rowSelections[option.id] !== undefined,
+        );
+    }
+
+    return (selections.value[question.id] ?? []).length > 0;
+}
+
+function firstGroupOptions(question: ExamQuestion) {
+    return question.options
+        .filter((option) => option.select_group === 'first')
+        .sort((left, right) => left.sort_order - right.sort_order);
+}
+
+function syncDoubleSelections(question: ExamQuestion): void {
+    const rowSelections = doubleRowSelections.value[question.id] ?? {};
+
+    selections.value[question.id] = firstGroupOptions(question)
+        .map((option) => rowSelections[option.id])
+        .filter((optionId): optionId is number => optionId !== undefined);
+}
+
+function selectedForDoubleRow(
+    questionId: number,
+    firstOptionId: number,
+): number | null {
+    return doubleRowSelections.value[questionId]?.[firstOptionId] ?? null;
+}
+
+function selectDoubleRow(
+    question: ExamQuestion,
+    firstOptionId: number,
+    secondOptionId: number | null,
+): void {
+    const current = { ...(doubleRowSelections.value[question.id] ?? {}) };
+
+    if (secondOptionId === null) {
+        delete current[firstOptionId];
+    } else {
+        current[firstOptionId] = secondOptionId;
+    }
+
+    doubleRowSelections.value[question.id] = current;
+    syncDoubleSelections(question);
+}
+
+function isQuestionAnsweredById(questionId: number): boolean {
+    const question = props.questions.find((item) => item.id === questionId);
+
+    if (! question) {
+        return false;
+    }
+
+    return isQuestionAnswered(question);
 }
 
 function selectQuestion(index: number): void {
@@ -125,7 +188,7 @@ function toggleOption(
 ): void {
     const current = selections.value[questionId] ?? [];
 
-    if (type === 'single' || type === 'double') {
+    if (type === 'single') {
         selections.value[questionId] = checked ? [optionId] : [];
         return;
     }
@@ -191,7 +254,7 @@ function buildAnswersPayload(): Array<{
                     :questions="visibleQuestions"
                     :active-index="activeQuestionIndex"
                     :answered-count="answeredInSection"
-                    :is-answered="isQuestionAnswered"
+                    :is-answered="isQuestionAnsweredById"
                     @select="selectQuestion"
                 />
 
@@ -271,10 +334,35 @@ function buildAnswersPayload(): Array<{
                                     <span
                                         class="size-1.5 rounded-full bg-primary"
                                     />
-                                    Жауап нұсқасын таңдаңыз
+                                    {{
+                                        activeQuestion.type === 'double'
+                                            ? 'Сопоставьте каждую строку с вариантом из списка'
+                                            : 'Жауап нұсқасын таңдаңыз'
+                                    }}
                                 </p>
 
+                                <ExamDoubleSelectOptions
+                                    v-if="activeQuestion.type === 'double'"
+                                    :question="activeQuestion"
+                                    :selected-for-row="
+                                        (firstOptionId) =>
+                                            selectedForDoubleRow(
+                                                activeQuestion!.id,
+                                                firstOptionId,
+                                            )
+                                    "
+                                    @select-row="
+                                        (firstOptionId, secondOptionId) =>
+                                            selectDoubleRow(
+                                                activeQuestion!,
+                                                firstOptionId,
+                                                secondOptionId,
+                                            )
+                                    "
+                                />
+
                                 <ExamAnswerOptions
+                                    v-else
                                     :question="activeQuestion"
                                     :is-checked="
                                         (optionId) =>

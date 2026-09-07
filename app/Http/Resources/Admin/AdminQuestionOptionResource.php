@@ -19,6 +19,7 @@ class AdminQuestionOptionResource extends JsonResource
             'content' => $this->content,
             'is_correct' => $this->is_correct,
             'select_group' => $this->select_group,
+            'match_label' => $this->match_label,
             'sort_order' => $this->sort_order,
         ];
     }

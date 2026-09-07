@@ -22,17 +22,27 @@ function createQuestionWithOptions(QuestionType $type): Question
     ]);
 
     if ($type === QuestionType::Double) {
-        foreach (['first', 'second'] as $group) {
-            foreach (['A', 'B', 'C', 'D'] as $index => $label) {
-                QuestionOption::factory()->create([
-                    'question_id' => $question->id,
-                    'select_group' => $group,
-                    'label' => $label,
-                    'content' => "<p>Option {$label}</p>",
-                    'is_correct' => $label === 'A',
-                    'sort_order' => $group === 'first' ? $index : $index + 4,
-                ]);
-            }
+        foreach (['A', 'B', 'C', 'D'] as $index => $label) {
+            QuestionOption::factory()->create([
+                'question_id' => $question->id,
+                'select_group' => 'first',
+                'label' => $label,
+                'content' => "<p>Row {$label}</p>",
+                'is_correct' => false,
+                'match_label' => $label,
+                'sort_order' => $index,
+            ]);
+        }
+
+        foreach (['A', 'B', 'C', 'D'] as $index => $label) {
+            QuestionOption::factory()->create([
+                'question_id' => $question->id,
+                'select_group' => 'second',
+                'label' => $label,
+                'content' => "<p>Choice {$label}</p>",
+                'is_correct' => false,
+                'sort_order' => $index + 4,
+            ]);
         }
 
         return app(QuestionAnswerKeyBuilder::class)->refresh($question->fresh(['options']));
@@ -132,11 +142,19 @@ test('question scorer calculates single multiple and double scores', function ()
         ->and($scorer->score($multiple, $partialCorrectIds))->toBe(1.0);
 
     $double = createQuestionWithOptions(QuestionType::Double);
-    $firstCorrectId = $double->options->where('select_group', 'first')->firstWhere('is_correct', true)?->id;
-    $secondCorrectId = $double->options->where('select_group', 'second')->firstWhere('is_correct', true)?->id;
+    $orderedSecondIds = $double->options
+        ->where('select_group', 'second')
+        ->sortBy('sort_order')
+        ->pluck('id')
+        ->all();
 
-    expect($scorer->score($double, [$firstCorrectId, $secondCorrectId]))->toBe(2.0)
-        ->and($scorer->score($double, [$firstCorrectId]))->toBe(1.0);
+    expect($scorer->score($double, $orderedSecondIds))->toBe(2.0)
+        ->and($scorer->score($double, [
+            $orderedSecondIds[0],
+            $orderedSecondIds[0],
+            $orderedSecondIds[2],
+            $orderedSecondIds[3],
+        ]))->toBe(1.0);
 });
 
 test('admin edit form loads existing options and correct flags', function () {

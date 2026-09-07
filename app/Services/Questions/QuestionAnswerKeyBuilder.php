@@ -23,19 +23,53 @@ class QuestionAnswerKeyBuilder
                     ->values()
                     ->all(),
             ],
-            QuestionType::Double => [
-                'groups' => [
-                    'first' => $question->options
-                        ->where('select_group', 'first')
-                        ->firstWhere('is_correct', true)
-                        ?->id,
-                    'second' => $question->options
-                        ->where('select_group', 'second')
-                        ->firstWhere('is_correct', true)
-                        ?->id,
-                ],
-            ],
+            QuestionType::Double => $this->buildDouble($question),
         };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildDouble(Question $question): array
+    {
+        $firstOptions = $question->options
+            ->where('select_group', 'first')
+            ->sortBy('sort_order')
+            ->values();
+
+        $secondOptions = $question->options
+            ->where('select_group', 'second')
+            ->sortBy('sort_order')
+            ->values();
+
+        $rows = $firstOptions
+            ->map(function ($firstOption) use ($secondOptions): ?array {
+                $matchLabel = $firstOption->match_label ?? $firstOption->label;
+                $secondOption = $secondOptions->firstWhere('label', $matchLabel);
+
+                if ($secondOption === null) {
+                    return null;
+                }
+
+                return [
+                    'first_id' => (int) $firstOption->id,
+                    'second_id' => (int) $secondOption->id,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($rows !== []) {
+            return ['rows' => $rows];
+        }
+
+        return [
+            'groups' => [
+                'first' => $firstOptions->firstWhere('is_correct', true)?->id,
+                'second' => $secondOptions->firstWhere('is_correct', true)?->id,
+            ],
+        ];
     }
 
     public function refresh(Question $question): Question

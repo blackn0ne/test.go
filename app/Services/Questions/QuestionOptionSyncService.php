@@ -23,6 +23,7 @@ class QuestionOptionSyncService
                 'content' => $option['content'],
                 'is_correct' => (bool) $option['is_correct'],
                 'select_group' => $option['select_group'] ?? null,
+                'match_label' => $option['match_label'] ?? null,
                 'sort_order' => $option['sort_order'] ?? $index,
             ]);
         }
