@@ -67,6 +67,8 @@ const handleLogout = () => {
             </span>
         </DropdownMenuItem>
 
+        <DropdownMenuSeparator />
+
         <DropdownMenuItem class="cursor-default rounded-lg" @select.prevent>
             <Building2 class="mr-2 size-4 shrink-0" />
             <span class="flex min-w-0 flex-col items-start gap-0.5">
@@ -83,6 +85,8 @@ const handleLogout = () => {
             </span>
         </DropdownMenuItem>
 
+        <DropdownMenuSeparator v-if="isStudent" />
+
         <DropdownMenuItem
             v-if="isStudent"
             class="cursor-pointer rounded-lg"
@@ -93,7 +97,12 @@ const handleLogout = () => {
                 class="flex w-full items-center"
             >
                 <ClipboardList class="mr-2 size-4 shrink-0" />
-                <span class="font-medium">Менің сынақтарым</span>
+                <span class="flex min-w-0 flex-col items-start gap-0.5">
+                    <span class="font-medium">Сынақтар</span>
+                    <span class="text-xs text-muted-foreground">
+                        Менің сынақтарым
+                    </span>
+                </span>
             </Link>
         </DropdownMenuItem>
     </DropdownMenuGroup>
