@@ -19,6 +19,7 @@ const optionTheme = OPTION_THEMES[0];
 const props = defineProps<{
     question: ExamQuestion;
     isChecked: (optionId: number) => boolean;
+    canSelect: (optionId: number) => boolean;
 }>();
 
 const emit = defineEmits<{
@@ -32,14 +33,27 @@ const emit = defineEmits<{
             v-for="option in question.options"
             :key="option.id"
             type="button"
+            :disabled="
+                question.type === 'multiple'
+                    && ! isChecked(option.id)
+                    && ! canSelect(option.id)
+            "
             :class="
                 cn(
                     'group flex w-full items-center gap-4 rounded-2xl border-2 border-border/70 bg-background/80 p-4 text-left transition-all duration-200',
                     optionTheme.hover,
                     isChecked(option.id) && optionTheme.selected,
+                    question.type === 'multiple'
+                        && ! isChecked(option.id)
+                        && ! canSelect(option.id)
+                        && 'cursor-not-allowed opacity-50 hover:border-border/70 hover:bg-background/80',
                 )
             "
-            @click="emit('select', option.id)"
+            @click="
+                canSelect(option.id) || isChecked(option.id)
+                    ? emit('select', option.id)
+                    : undefined
+            "
         >
             <div
                 :class="

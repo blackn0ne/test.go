@@ -24,4 +24,13 @@ enum QuestionType: string
             self::Multiple, self::Double => 2,
         };
     }
+
+    public function maxSelections(): int
+    {
+        return match ($this) {
+            self::Single => 1,
+            self::Multiple => 3,
+            self::Double => 2,
+        };
+    }
 }

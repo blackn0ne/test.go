@@ -32,6 +32,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('exams.start');
         Route::post('exams/{exam}/submit', [ExamAttemptController::class, 'submit'])
             ->name('exams.submit');
+        Route::post('exams/{exam}/answers', [ExamAttemptController::class, 'saveAnswers'])
+            ->name('exams.answers.save');
         Route::get('exams/{exam}/attempts/{attempt}', [ExamAttemptController::class, 'result'])
             ->name('exams.result');
     });

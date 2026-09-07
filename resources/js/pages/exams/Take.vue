@@ -14,13 +14,19 @@ import InputError from '@/components/InputError.vue';
 import RichContent from '@/components/RichContent.vue';
 import { Button } from '@/components/ui/button';
 import { useExamTimer } from '@/composables/useExamTimer';
+import {
+    buildSelectionsFromSavedAnswers,
+    useExamAnswerPersistence,
+} from '@/composables/useExamAnswerPersistence';
 import ExamScreenLayout from '@/layouts/exam/ExamScreenLayout.vue';
 import type {
     AttemptInfo,
     ExamInfo,
     ExamQuestion,
     ExamSection,
+    SavedAnswer,
 } from '@/types/exam';
+import { MULTIPLE_MAX_SELECTIONS } from '@/types/exam';
 
 defineOptions({
     layout: null,
@@ -31,6 +37,7 @@ const props = defineProps<{
     attempt: AttemptInfo;
     questions: ExamQuestion[];
     sections: ExamSection[];
+    savedAnswers?: SavedAnswer[];
     requiresPromoCode?: boolean;
 }>();
 
@@ -48,7 +55,9 @@ const { formatted, isUrgent } = useExamTimer({
     endsAt: props.exam.ends_at,
 });
 
-const selections = ref<Record<number, number[]>>({});
+const selections = ref<Record<number, number[]>>(
+    buildSelectionsFromSavedAnswers(props.savedAnswers ?? []),
+);
 
 const visibleQuestions = computed(() =>
     props.questions.filter(
@@ -188,9 +197,25 @@ function toggleOption(
         return;
     }
 
+    if (checked && current.length >= MULTIPLE_MAX_SELECTIONS) {
+        return;
+    }
+
     selections.value[questionId] = checked
         ? [...current, optionId]
         : current.filter((id) => id !== optionId);
+}
+
+function canSelectOption(question: ExamQuestion, optionId: number): boolean {
+    if (question.type !== 'multiple') {
+        return true;
+    }
+
+    if (isChecked(question.id, optionId)) {
+        return true;
+    }
+
+    return (selections.value[question.id] ?? []).length < MULTIPLE_MAX_SELECTIONS;
 }
 
 function isChecked(questionId: number, optionId: number): boolean {
@@ -220,6 +245,8 @@ function buildAnswersPayload(): Array<{
         selected_option_ids: selections.value[question.id] ?? [],
     }));
 }
+
+useExamAnswerPersistence(props.exam.id, selections, buildAnswersPayload);
 </script>
 
 <template>
@@ -320,6 +347,13 @@ function buildAnswersPayload(): Array<{
                                         (optionId) =>
                                             isChecked(
                                                 activeQuestion!.id,
+                                                optionId,
+                                            )
+                                    "
+                                    :can-select="
+                                        (optionId) =>
+                                            canSelectOption(
+                                                activeQuestion!,
                                                 optionId,
                                             )
                                     "

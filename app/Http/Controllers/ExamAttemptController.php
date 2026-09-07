@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ExamAttemptStatus;
+use App\Http\Requests\Exam\SaveExamAttemptAnswersRequest;
 use App\Http\Requests\Exam\StartExamAttemptRequest;
 use App\Http\Requests\Exam\SubmitExamAttemptRequest;
 use App\Http\Resources\Exam\ExamAttemptQuestionResource;
@@ -11,6 +12,7 @@ use App\Models\ExamAttempt;
 use App\Services\Exams\ExamAttemptService;
 use App\Support\ExamPeriodFormatter;
 use App\Support\ExamSectionCatalog;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -42,8 +44,28 @@ class ExamAttemptController extends Controller
             'attempt' => $this->attemptPayload($attempt),
             'questions' => ExamAttemptQuestionResource::collection($questions)->resolve(),
             'sections' => ExamSectionCatalog::fromAttemptQuestions($questions),
+            'savedAnswers' => $attempt->answers->map(fn ($answer) => [
+                'exam_attempt_question_id' => $answer->exam_attempt_question_id,
+                'selected_option_ids' => $answer->selected_option_ids,
+            ])->values(),
             'requiresPromoCode' => false,
         ]);
+    }
+
+    public function saveAnswers(
+        SaveExamAttemptAnswersRequest $request,
+        Exam $exam,
+    ): JsonResponse {
+        $attempt = ExamAttempt::query()
+            ->where('exam_id', $exam->id)
+            ->where('user_id', $request->user()->id)
+            ->where('status', ExamAttemptStatus::InProgress)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->attempts->saveAnswers($attempt, $request->validated('answers'));
+
+        return response()->json(['saved' => true]);
     }
 
     public function start(StartExamAttemptRequest $request, Exam $exam): RedirectResponse

@@ -214,6 +214,83 @@ test('student can start a new attempt on the same exam with another promo code',
         ->assertRedirect(route('exams.take', $exam));
 });
 
+test('multiple choice answers are limited to three selections on submit', function () {
+    $admin = User::factory()->admin()->create();
+    $subject = Subject::factory()->create();
+
+    $question = Question::factory()->create([
+        'subject_id' => $subject->id,
+        'type' => QuestionType::Multiple,
+        'body' => '<p>Select up to three</p>',
+    ]);
+
+    foreach (['A', 'B', 'C', 'D', 'E', 'F'] as $index => $label) {
+        QuestionOption::factory()->create([
+            'question_id' => $question->id,
+            'label' => $label,
+            'content' => "<p>{$label}</p>",
+            'is_correct' => in_array($label, ['A', 'B', 'C'], true),
+            'sort_order' => $index,
+        ]);
+    }
+
+    $exam = Exam::factory()->create([
+        'subject_id' => $subject->id,
+        'created_by' => $admin->id,
+        'status' => ExamStatus::Published,
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addDay(),
+    ]);
+
+    ExamQuestion::query()->create([
+        'exam_id' => $exam->id,
+        'question_id' => $question->id,
+        'sort_order' => 0,
+    ]);
+
+    $student = createStudentWithDirection();
+    $promoCode = createPromoCodeForStudent($student, $exam, $admin);
+    $service = app(ExamAttemptService::class);
+
+    $attempt = $service->startOrResume($exam, $student, $promoCode->code);
+    $snapshotQuestion = $attempt->snapshotQuestions->first();
+
+    expect(fn () => $service->submit($attempt, [
+        [
+            'exam_attempt_question_id' => $snapshotQuestion->id,
+            'selected_option_ids' => $snapshotQuestion->options->take(4)->pluck('id')->all(),
+        ],
+    ]))->toThrow(ValidationException::class);
+});
+
+test('student answers are saved and restored during in-progress attempt', function () {
+    $exam = createPublishedExamWithQuestion();
+    $student = createStudentWithDirection();
+    $admin = User::factory()->admin()->create();
+    $promoCode = createPromoCodeForStudent($student, $exam, $admin);
+    $service = app(ExamAttemptService::class);
+
+    $attempt = $service->startOrResume($exam, $student, $promoCode->code);
+    $snapshotQuestion = $attempt->snapshotQuestions->first();
+    $selectedOption = $snapshotQuestion->options->firstWhere('label', 'B');
+
+    $service->saveAnswers($attempt, [
+        [
+            'exam_attempt_question_id' => $snapshotQuestion->id,
+            'selected_option_ids' => [$selectedOption->id],
+        ],
+    ]);
+
+    $this->actingAs($student)
+        ->get(route('exams.take', $exam))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('exams/Take')
+            ->where('savedAnswers.0.exam_attempt_question_id', $snapshotQuestion->id)
+            ->where('savedAnswers.0.selected_option_ids', [$selectedOption->id])
+        );
+});
+
 test('admin question edit exposes is_correct only in admin context', function () {
     $admin = User::factory()->admin()->create();
     createPublishedExamWithQuestion();

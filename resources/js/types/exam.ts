@@ -25,6 +25,11 @@ export type AttemptInfo = {
     max_score: number | null;
 };
 
+export type SavedAnswer = {
+    exam_attempt_question_id: number;
+    selected_option_ids: number[];
+};
+
 export type QuestionOption = {
     id: number;
     question_option_id: number;
@@ -50,3 +55,5 @@ export type ExamQuestion = {
     context_body: string | null;
     options: QuestionOption[];
 };
+
+export const MULTIPLE_MAX_SELECTIONS = 3;

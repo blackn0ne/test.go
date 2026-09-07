@@ -203,6 +203,65 @@ class ExamAttemptService
         });
     }
 
+    /**
+     * @param  array<int, array{exam_attempt_question_id: int, selected_option_ids: array<int>}>  $answers
+     */
+    public function saveAnswers(ExamAttempt $attempt, array $answers): void
+    {
+        if (! $attempt->isInProgress()) {
+            throw ValidationException::withMessages([
+                'attempt' => 'Попытка уже завершена.',
+            ]);
+        }
+
+        DB::transaction(function () use ($attempt, $answers): void {
+            $attempt->load([
+                'snapshotQuestions.options',
+            ]);
+
+            foreach ($answers as $answerPayload) {
+                $snapshotQuestion = $attempt->snapshotQuestions
+                    ->firstWhere('id', $answerPayload['exam_attempt_question_id']);
+
+                if ($snapshotQuestion === null) {
+                    continue;
+                }
+
+                $selectedOptionIds = collect($answerPayload['selected_option_ids'])
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if ($selectedOptionIds === []) {
+                    ExamAttemptAnswer::query()
+                        ->where('exam_attempt_id', $attempt->id)
+                        ->where('exam_attempt_question_id', $snapshotQuestion->id)
+                        ->delete();
+
+                    continue;
+                }
+
+                $this->assertSelectedOptionsBelongToQuestion(
+                    $snapshotQuestion,
+                    $selectedOptionIds,
+                );
+
+                ExamAttemptAnswer::query()->updateOrCreate(
+                    [
+                        'exam_attempt_id' => $attempt->id,
+                        'exam_attempt_question_id' => $snapshotQuestion->id,
+                    ],
+                    [
+                        'selected_option_ids' => $selectedOptionIds,
+                        'score_awarded' => null,
+                        'answered_at' => now(),
+                    ],
+                );
+            }
+        });
+    }
+
     private function createGeneratedSnapshots(ExamAttempt $attempt, Exam $exam, User $user): void
     {
         $paper = $this->paperGenerator->generate($exam, $user);
@@ -309,6 +368,12 @@ class ExamAttemptService
                     'answers' => 'Выбран недопустимый вариант ответа.',
                 ]);
             }
+        }
+
+        if (count($selectedSnapshotOptionIds) > $snapshotQuestion->type->maxSelections()) {
+            throw ValidationException::withMessages([
+                'answers' => 'Превышено максимальное количество ответов для этого вопроса.',
+            ]);
         }
     }
 }
