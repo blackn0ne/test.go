@@ -22,6 +22,8 @@ type Props = {
     examId: number;
 };
 
+type FormErrors = Record<string, string | string[] | undefined>;
+
 const props = defineProps<Props>();
 const open = defineModel<boolean>('open', { default: false });
 
@@ -38,10 +40,6 @@ watch(promoCode, (value) => {
     if (sanitized !== value) {
         promoCode.value = sanitized;
     }
-
-    if (hasError.value && sanitized.length > 0) {
-        hasError.value = false;
-    }
 });
 
 watch(open, (isOpen) => {
@@ -50,6 +48,46 @@ watch(open, (isOpen) => {
         hasError.value = false;
     }
 });
+
+function transformPromoCode(): { promo_code: string } {
+    return {
+        promo_code: promoCode.value,
+    };
+}
+
+function firstError(error: string | string[] | undefined): string | undefined {
+    if (! error) {
+        return undefined;
+    }
+
+    return Array.isArray(error) ? error[0] : error;
+}
+
+function resolveFormError(errors: FormErrors): string | undefined {
+    for (const key of [
+        'promo_code',
+        'exam',
+        'questions',
+        'blueprint',
+        'direction',
+    ]) {
+        const message = firstError(errors[key]);
+
+        if (message) {
+            return message;
+        }
+    }
+
+    for (const message of Object.values(errors)) {
+        const resolved = firstError(message);
+
+        if (resolved) {
+            return resolved;
+        }
+    }
+
+    return undefined;
+}
 
 function resolveErrorTitle(message: string | undefined): string {
     if (! message) {
@@ -66,6 +104,7 @@ function resolveErrorTitle(message: string | undefined): string {
         || message.includes('не действителен')
         || message.includes('действителен для')
         || message.includes('проводится в')
+        || message.includes('Сейчас')
     ) {
         return 'Промокод недействителен';
     }
@@ -81,15 +120,27 @@ function resolveErrorTitle(message: string | undefined): string {
         return 'Промокод не для вашей школы';
     }
 
-    return 'Не удалось активировать промокод';
-}
-
-function firstError(error: string | string[] | undefined): string | undefined {
-    if (! error) {
-        return undefined;
+    if (message.includes('завершили')) {
+        return 'Экзамен уже завершён';
     }
 
-    return Array.isArray(error) ? error[0] : error;
+    if (message.includes('недоступен')) {
+        return 'Экзамен недоступен';
+    }
+
+    if (message.includes('Введите промокод')) {
+        return 'Введите промокод';
+    }
+
+    if (message.includes('Недостаточно вопросов')) {
+        return 'Не хватает вопросов';
+    }
+
+    if (message.includes('шаблон') || message.includes('направление')) {
+        return 'Экзамен не настроен';
+    }
+
+    return 'Не удалось начать экзамен';
 }
 
 function handleFormError(): void {
@@ -122,14 +173,13 @@ function handleFormError(): void {
 
             <Form
                 v-bind="ExamAttemptController.start.form(props.examId)"
+                :transform="transformPromoCode"
                 class="space-y-5 px-6 py-6"
-                reset-on-error
                 preserve-scroll
+                preserve-state
                 #default="{ errors, processing }"
                 @error="handleFormError"
             >
-                <input type="hidden" name="promo_code" :value="promoCode" />
-
                 <div
                     class="flex flex-col items-center gap-4"
                     :class="cn(hasError && 'animate-shake')"
@@ -165,7 +215,7 @@ function handleFormError(): void {
                 </div>
 
                 <div
-                    v-if="firstError(errors.promo_code)"
+                    v-if="resolveFormError(errors)"
                     class="flex items-start gap-3 rounded-2xl border border-destructive/25 bg-destructive/5 px-4 py-3"
                     role="alert"
                 >
@@ -176,12 +226,12 @@ function handleFormError(): void {
                         <p class="font-semibold text-destructive">
                             {{
                                 resolveErrorTitle(
-                                    firstError(errors.promo_code),
+                                    resolveFormError(errors),
                                 )
                             }}
                         </p>
                         <p class="text-destructive/80">
-                            {{ firstError(errors.promo_code) }}
+                            {{ resolveFormError(errors) }}
                         </p>
                     </div>
                 </div>

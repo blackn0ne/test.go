@@ -125,14 +125,14 @@ class PromoCodeBatchService
         }
 
         if (
-            $promoCode->year !== $exam->periodYear()
-            || $promoCode->month !== $exam->periodMonth()
+            $promoCode->year !== (int) now()->year
+            || $promoCode->month !== (int) now()->month
         ) {
             throw ValidationException::withMessages([
                 'promo_code' => sprintf(
-                    'Промокод действителен для %s, а экзамен проводится в %s.',
+                    'Промокод действителен для %s. Сейчас %s.',
                     $this->formatPeriod($promoCode->year, $promoCode->month),
-                    $this->formatPeriod($exam->periodYear(), $exam->periodMonth()),
+                    $this->formatPeriod((int) now()->year, (int) now()->month),
                 ),
             ]);
         }

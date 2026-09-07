@@ -158,6 +158,51 @@ test('student can start exam with promo when exam has no start date', function (
     expect($promoCode->fresh()->redeemed_at)->not->toBeNull();
 });
 
+test('student can start exam with promo even when exam start date is in another month', function () {
+    $school = User::factory()->school()->create();
+    $direction = Direction::query()->create([
+        'code' => 'FIZ-MAT',
+        'name' => 'Физика + Математика',
+    ]);
+    $student = User::factory()->withDirection($direction)->create([
+        'school_id' => $school->id,
+    ]);
+
+    $admin = User::factory()->admin()->create();
+    $subject = Subject::factory()->create();
+    $now = now();
+
+    $exam = Exam::factory()->create([
+        'subject_id' => $subject->id,
+        'created_by' => $admin->id,
+        'status' => ExamStatus::Published,
+        'starts_at' => $now->copy()->subMonths(3)->startOfMonth(),
+        'ends_at' => $now->copy()->addMonth()->endOfMonth(),
+    ]);
+
+    $batch = PromoCodeBatch::query()->create([
+        'school_id' => $school->id,
+        'year' => (int) $now->year,
+        'month' => (int) $now->month,
+        'coupons_per_student' => 1,
+        'students_count' => 1,
+        'total_codes' => 1,
+        'created_by' => $admin->id,
+    ]);
+
+    $promoCode = PromoCode::query()->create([
+        'promo_code_batch_id' => $batch->id,
+        'school_id' => $school->id,
+        'year' => (int) $now->year,
+        'month' => (int) $now->month,
+        'code' => 'E89ZO',
+    ]);
+
+    $this->actingAs($student)
+        ->post(route('exams.start', $exam), ['promo_code' => $promoCode->code])
+        ->assertRedirect(route('exams.take', $exam));
+});
+
 test('student cannot start exam with already used promo code', function () {
     $school = User::factory()->school()->create();
     $direction = Direction::query()->create([

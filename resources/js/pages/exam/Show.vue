@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { Clock, Play, Sparkles } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import PromoCodeModal from '@/components/exam/PromoCodeModal.vue';
 import ExamScreenLayout from '@/layouts/exam/ExamScreenLayout.vue';
 import type { ExamInfo, ExamSection } from '@/types/exam';
@@ -25,6 +25,24 @@ const props = defineProps<{
 
 const promoModalOpen = ref(false);
 const promoCode = ref('');
+
+const page = usePage<{ errors?: Record<string, string | string[]> }>();
+
+watch(
+    () => page.props.errors,
+    (errors) => {
+        if (
+            errors?.promo_code
+            || errors?.exam
+            || errors?.questions
+            || errors?.blueprint
+            || errors?.direction
+        ) {
+            promoModalOpen.value = true;
+        }
+    },
+    { deep: true, immediate: true },
+);
 
 const canStart = computed(() => props.lobby.available && props.exam !== null);
 </script>
