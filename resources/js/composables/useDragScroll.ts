@@ -8,15 +8,19 @@ export function useDragScroll(
     containerRef: Ref<HTMLElement | null>,
     options: DragScrollOptions = {},
 ) {
-    const dragThreshold = options.dragThreshold ?? 4;
+    const dragThreshold = options.dragThreshold ?? 6;
     const isDragging = ref(false);
-    const suppressNextClick = ref(false);
 
+    let isPointerDown = false;
+    let hasDragged = false;
+    let suppressClick = false;
     let startPageX = 0;
     let startScrollLeft = 0;
     let pointerId: number | null = null;
 
-    function endDrag(): void {
+    function resetDragState(): void {
+        isPointerDown = false;
+        hasDragged = false;
         isDragging.value = false;
         pointerId = null;
 
@@ -35,15 +39,11 @@ export function useDragScroll(
             return;
         }
 
+        isPointerDown = true;
+        hasDragged = false;
         pointerId = event.pointerId;
-        isDragging.value = true;
-        suppressNextClick.value = false;
         startPageX = event.pageX;
         startScrollLeft = element.scrollLeft;
-
-        element.setPointerCapture(event.pointerId);
-        element.classList.add('cursor-grabbing', 'select-none');
-        element.classList.remove('cursor-grab');
     }
 
     function onPointerMove(event: PointerEvent): void {
@@ -51,7 +51,7 @@ export function useDragScroll(
 
         if (
             element === null
-            || ! isDragging.value
+            || ! isPointerDown
             || pointerId !== event.pointerId
         ) {
             return;
@@ -59,10 +59,19 @@ export function useDragScroll(
 
         const delta = event.pageX - startPageX;
 
-        if (Math.abs(delta) >= dragThreshold) {
-            suppressNextClick.value = true;
+        if (! hasDragged) {
+            if (Math.abs(delta) < dragThreshold) {
+                return;
+            }
+
+            hasDragged = true;
+            isDragging.value = true;
+            element.setPointerCapture(event.pointerId);
+            element.classList.add('cursor-grabbing', 'select-none');
+            element.classList.remove('cursor-grab');
         }
 
+        event.preventDefault();
         element.scrollLeft = startScrollLeft - delta;
     }
 
@@ -71,26 +80,31 @@ export function useDragScroll(
 
         if (
             element === null
-            || pointerId === null
-            || event.pointerId !== pointerId
+            || ! isPointerDown
+            || pointerId !== event.pointerId
         ) {
             return;
         }
 
-        if (element.hasPointerCapture(event.pointerId)) {
+        if (hasDragged && element.hasPointerCapture(event.pointerId)) {
             element.releasePointerCapture(event.pointerId);
+            suppressClick = true;
         }
 
-        endDrag();
+        resetDragState();
     }
 
-    function handleSlotClick(callback: () => void): void {
-        if (suppressNextClick.value) {
-            suppressNextClick.value = false;
-
+    function onClickCapture(event: MouseEvent): void {
+        if (! suppressClick) {
             return;
         }
 
+        suppressClick = false;
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    function handleSlotClick(callback: () => void): void {
         callback();
     }
 
@@ -107,6 +121,7 @@ export function useDragScroll(
         element.addEventListener('pointermove', onPointerMove);
         element.addEventListener('pointerup', onPointerUp);
         element.addEventListener('pointercancel', onPointerUp);
+        element.addEventListener('click', onClickCapture, true);
     });
 
     onUnmounted(() => {
@@ -120,6 +135,7 @@ export function useDragScroll(
         element.removeEventListener('pointermove', onPointerMove);
         element.removeEventListener('pointerup', onPointerUp);
         element.removeEventListener('pointercancel', onPointerUp);
+        element.removeEventListener('click', onClickCapture, true);
     });
 
     return {

@@ -45,7 +45,8 @@ function slotClass(index: number, questionId: number): string {
 }
 
 const scrollContainerRef = ref<HTMLElement | null>(null);
-const { handleSlotClick } = useDragScroll(scrollContainerRef);
+
+useDragScroll(scrollContainerRef);
 
 watch(
     () => props.activeIndex,
@@ -126,9 +127,7 @@ watch(
                         :class="slotClass(index, question.id)"
                         :aria-label="`Сұрақ ${index + 1}`"
                         :aria-current="activeIndex === index ? 'true' : undefined"
-                        @click="
-                            handleSlotClick(() => emit('select', index))
-                        "
+                        @click="emit('select', index)"
                     >
                         {{ index + 1 }}
                     </button>
