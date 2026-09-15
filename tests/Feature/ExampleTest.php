@@ -1,8 +1,13 @@
 <?php
 
 test('returns the login screen at the home page', function () {
-    $response = $this->get(route('login'));
+    $this->get('/')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->component('auth/Login'));
+});
 
-    $response->assertOk()
+test('returns the login screen at the login route', function () {
+    $this->get(route('login'))
+        ->assertOk()
         ->assertInertia(fn ($page) => $page->component('auth/Login'));
 });

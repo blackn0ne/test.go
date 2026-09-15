@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { store as loginStore } from '@/routes/login';
+import { login } from '@/routes';
 
 defineOptions({
     layout: {
@@ -79,7 +79,7 @@ defineProps<{
 
         <p class="text-center text-sm text-muted-foreground">
             Студент или школа?
-            <TextLink :href="loginStore.url()">Вход по ИИН</TextLink>
+            <TextLink :href="login()">Вход по ИИН</TextLink>
         </p>
     </Form>
 </template>

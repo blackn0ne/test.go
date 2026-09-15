@@ -72,7 +72,7 @@ function createStudentExamFixtures(): array
 test('student login redirects to exam screen', function () {
     ['student' => $student] = createStudentExamFixtures();
 
-    $this->post(route('login'), [
+    $this->post(route('login.store'), [
         'iin' => $student->iin,
         'password' => 'password',
     ])->assertRedirect(route('exam.show'));

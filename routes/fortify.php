@@ -26,11 +26,16 @@ use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
 
 Route::group(['middleware' => config('fortify.middleware', ['web'])], function () {
     $enableViews = config('fortify.views', true);
+    $guestMiddleware = ['guest:'.config('fortify.guard')];
+    $showLogin = [AuthenticatedSessionController::class, 'create'];
 
     if ($enableViews) {
-        Route::get('/', [AuthenticatedSessionController::class, 'create'])
-            ->middleware(['guest:'.config('fortify.guard')])
+        Route::get(RoutePath::for('login', '/login'), $showLogin)
+            ->middleware($guestMiddleware)
             ->name('login');
+
+        Route::get('/', $showLogin)
+            ->middleware($guestMiddleware);
     }
 
     $limiter = config('fortify.limiters.login');
