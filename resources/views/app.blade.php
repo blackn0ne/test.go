@@ -30,9 +30,14 @@
             }
         </style>
 
-        <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
-        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
-        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+        @if ($siteFaviconUrl ?? null)
+            <link rel="icon" href="{{ $siteFaviconUrl }}">
+            <link rel="apple-touch-icon" href="{{ $siteFaviconUrl }}">
+        @else
+            <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+            <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+            <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+        @endif
         <meta name="theme-color" content="#38bdf8">
 
         @fonts

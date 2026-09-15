@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Direction;
 use App\Models\User;
+use App\Support\SiteBranding;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -43,7 +44,8 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'site' => fn (): array => SiteBranding::shared(),
+            'name' => fn (): string => SiteBranding::name(),
             'auth' => [
                 'user' => $user ? [
                     'id' => $user->id,

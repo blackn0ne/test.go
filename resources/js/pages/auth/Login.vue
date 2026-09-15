@@ -21,6 +21,7 @@ defineProps<{
 
 const page = usePage();
 const appName = page.props.name as string;
+const logoUrl = page.props.site.logo_url;
 </script>
 
 <template>
@@ -56,9 +57,20 @@ const appName = page.props.name as string;
                 </p>
                 <div class="mt-6 flex flex-col items-center gap-3">
                     <div
-                        class="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-violet-500 shadow-lg shadow-sky-500/25"
+                        class="flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-border/60 bg-background shadow-lg"
                     >
-                        <AppLogoIcon class="size-8 fill-white text-white" />
+                        <img
+                            v-if="logoUrl"
+                            :src="logoUrl"
+                            :alt="appName"
+                            class="size-full object-contain p-2"
+                        />
+                        <div
+                            v-else
+                            class="flex size-full items-center justify-center bg-gradient-to-br from-sky-500 to-violet-500"
+                        >
+                            <AppLogoIcon class="size-8 fill-white text-white" />
+                        </div>
                     </div>
                     <h1
                         class="bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-3xl font-bold tracking-tight sm:text-4xl"
@@ -89,7 +101,6 @@ const appName = page.props.name as string;
                 >
                     <div class="grid gap-4">
                         <div class="grid gap-1.5">
-                            <Label for="iin">ЖСН</Label>
                             <Input
                                 id="iin"
                                 name="iin"
@@ -98,14 +109,13 @@ const appName = page.props.name as string;
                                 inputmode="numeric"
                                 maxlength="12"
                                 autocomplete="username"
-                                placeholder="12 цифр"
+                                placeholder="ЖСН"
                                 class="h-11 rounded-xl"
                             />
                             <InputError :message="errors.iin" />
                         </div>
 
                         <div class="grid gap-1.5">
-                            <Label for="password">Пароль</Label>
                             <PasswordInput
                                 id="password"
                                 name="password"

@@ -17,6 +17,11 @@ declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
+            site: {
+                project_name: string | null;
+                logo_url: string | null;
+                favicon_url: string | null;
+            };
             auth: Auth;
             directions: import('@/types/auth').DirectionOption[];
             sidebarOpen: boolean;
