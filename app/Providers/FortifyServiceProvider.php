@@ -22,6 +22,8 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        Fortify::ignoreRoutes();
+
         $this->app->singleton(
             LoginResponse::class,
             \App\Http\Responses\LoginResponse::class,

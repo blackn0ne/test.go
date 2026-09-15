@@ -8,7 +8,7 @@ use App\Http\Controllers\StudentExamHistoryController;
 use App\Http\Controllers\UserDirectionController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+require __DIR__.'/fortify.php';
 
 Route::middleware('guest')->group(function () {
     Route::get('admin', [AdminAuthenticatedSessionController::class, 'create'])
