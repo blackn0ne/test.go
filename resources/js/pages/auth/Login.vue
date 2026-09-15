@@ -60,11 +60,11 @@ const logoUrl = page.props.site.logo_url;
                         v-if="logoUrl"
                         :src="logoUrl"
                         :alt="appName"
-                        class="h-[72px] w-auto object-contain"
+                        class="h-[48px] w-auto object-contain"
                     />
                     <AppLogoIcon
                         v-else
-                        class="h-[72px] w-auto fill-current text-foreground"
+                        class="h-[48px] w-auto fill-current text-foreground"
                     />
                     <p class="max-w-sm text-sm text-muted-foreground">
                         Жүйеге кіру үшін ЖСН және парольді енгізіңіз
