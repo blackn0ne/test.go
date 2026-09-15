@@ -8,7 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { login } from '@/routes/login';
+import { login } from '@/routes';
 
 defineProps<{
     title?: string;

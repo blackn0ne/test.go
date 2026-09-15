@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
-import { login } from '@/routes/login';
+import { login } from '@/routes';
 
 const page = usePage();
 const name = page.props.name;
