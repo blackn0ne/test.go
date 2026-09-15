@@ -56,27 +56,16 @@ const logoUrl = page.props.site.logo_url;
                     <Sparkles class="size-3.5 text-amber-500" />
                 </p>
                 <div class="mt-6 flex flex-col items-center gap-3">
-                    <div
-                        class="flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-border/60 bg-background shadow-lg"
-                    >
-                        <img
-                            v-if="logoUrl"
-                            :src="logoUrl"
-                            :alt="appName"
-                            class="size-full object-contain p-2"
-                        />
-                        <div
-                            v-else
-                            class="flex size-full items-center justify-center bg-gradient-to-br from-sky-500 to-violet-500"
-                        >
-                            <AppLogoIcon class="size-8 fill-white text-white" />
-                        </div>
-                    </div>
-                    <h1
-                        class="bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-3xl font-bold tracking-tight sm:text-4xl"
-                    >
-                        {{ appName }}
-                    </h1>
+                    <img
+                        v-if="logoUrl"
+                        :src="logoUrl"
+                        :alt="appName"
+                        class="h-[72px] w-auto object-contain"
+                    />
+                    <AppLogoIcon
+                        v-else
+                        class="h-[72px] w-auto fill-current text-foreground"
+                    />
                     <p class="max-w-sm text-sm text-muted-foreground">
                         Жүйеге кіру үшін ЖСН және парольді енгізіңіз
                     </p>
